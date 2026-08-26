@@ -45,7 +45,7 @@ The driver remains a native mobile app because reliable foreground-service/backg
 
 ## Remaining pilot work
 
-- Complete admin edit/deactivate/reorder screens beyond the current authenticated operational dashboard and lists.
+- Complete physical end-to-end validation of the Admin configuration workflow against the deployed PostGIS database and mobile Driver App.
 - Complete physical Android/iOS field validation of the implemented Driver App.
 - Render a real MapLibre base map; current live web detail displays real coordinates and realtime movement on a map-status surface.
 - Connect Redis' Socket.IO adapter for multiple API replicas and add a scheduled stale-event worker.

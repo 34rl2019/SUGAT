@@ -1,6 +1,6 @@
 export const livePolicy = {
   liveAfterSeconds: Number(process.env.LIVE_AFTER_SECONDS ?? 20),
-  staleAfterSeconds: Number(process.env.STALE_AFTER_SECONDS ?? 120),
+  staleAfterSeconds: Number(process.env.GPS_STALE_AFTER_SECONDS ?? process.env.STALE_AFTER_SECONDS ?? 120),
   offlineAfterSeconds: Number(process.env.OFFLINE_AFTER_SECONDS ?? 600),
   approachingStopMeters: Number(process.env.APPROACHING_STOP_METERS ?? 1500),
   arrivedStopMeters: Number(process.env.ARRIVED_STOP_METERS ?? 150),
