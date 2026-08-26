@@ -1,0 +1,248 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
+}
+
+enum Role {
+  DRIVER
+  ADMIN
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  DISABLED
+}
+
+enum VehicleType {
+  BUS
+  VAN
+  SHUTTLE
+}
+
+enum TripStatus {
+  SCHEDULED
+  READY
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum TripEventType {
+  STARTED
+  LOCATION_ACCEPTED
+  STOP_APPROACHING
+  STOP_ARRIVED
+  STOP_PASSED
+  COMPLETED
+  CANCELLED
+  GPS_STALE
+}
+
+model User {
+  id            String           @id @default(uuid()) @db.Uuid
+  email         String           @unique
+  phone         String?          @unique
+  passwordHash  String
+  role          Role
+  accountStatus AccountStatus    @default(ACTIVE)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  driver        Driver?
+  sessions      RefreshSession[]
+  auditLogs     AuditLog[]       @relation("AuditActor")
+}
+
+model Driver {
+  id               String     @id @default(uuid()) @db.Uuid
+  userId           String     @unique @db.Uuid
+  firstName        String
+  middleName       String?
+  lastName         String
+  photoUrl         String?
+  licenseNumber    String?
+  licenseExpiresAt DateTime?
+  active           Boolean    @default(true)
+  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicles         Vehicle[]  @relation("AssignedDriver")
+  trips            Trip[]
+  schedules        Schedule[]
+}
+
+model Vehicle {
+  id               String      @id @default(uuid()) @db.Uuid
+  type             VehicleType
+  plateNumber      String      @unique
+  bodyNumber       String?
+  displayName      String
+  brand            String?
+  model            String?
+  capacity         Int?
+  photoUrl         String?
+  active           Boolean     @default(true)
+  assignedDriverId String?     @db.Uuid
+  assignedDriver   Driver?     @relation("AssignedDriver", fields: [assignedDriverId], references: [id])
+  trips            Trip[]
+  schedules        Schedule[]
+}
+
+model Stop {
+  id               String      @id @default(uuid()) @db.Uuid
+  name             String
+  description      String?
+  cityMunicipality String?
+  province         String?
+  latitude         Float
+  longitude        Float
+  active           Boolean     @default(true)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  routeStops       RouteStop[]
+}
+
+model Route {
+  id        String      @id @default(uuid()) @db.Uuid
+  name      String
+  direction String
+  active    Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  stops     RouteStop[]
+  schedules Schedule[]
+  trips     Trip[]
+}
+
+model RouteStop {
+  id                  String  @id @default(uuid()) @db.Uuid
+  routeId             String  @db.Uuid
+  stopId              String  @db.Uuid
+  sequence            Int
+  boardingAllowed     Boolean @default(true)
+  dropoffAllowed      Boolean @default(true)
+  minutesFromPrevious Int?
+  route               Route   @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  stop                Stop    @relation(fields: [stopId], references: [id])
+
+  @@unique([routeId, sequence])
+  @@unique([routeId, stopId])
+  @@index([stopId, routeId])
+}
+
+model Schedule {
+  id          String   @id @default(uuid()) @db.Uuid
+  routeId     String   @db.Uuid
+  driverId    String   @db.Uuid
+  vehicleId   String   @db.Uuid
+  departureAt DateTime
+  active      Boolean  @default(true)
+  route       Route    @relation(fields: [routeId], references: [id])
+  driver      Driver   @relation(fields: [driverId], references: [id])
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id])
+  trip        Trip?
+
+  @@index([driverId, departureAt])
+  @@index([vehicleId, departureAt])
+}
+
+model Trip {
+  id                   String                  @id @default(uuid()) @db.Uuid
+  scheduleId           String?                 @unique @db.Uuid
+  routeId              String                  @db.Uuid
+  driverId             String                  @db.Uuid
+  vehicleId            String                  @db.Uuid
+  status               TripStatus              @default(SCHEDULED)
+  scheduledDepartureAt DateTime
+  startedAt            DateTime?
+  endedAt              DateTime?
+  lastLocationAt       DateTime?
+  lastPassedSequence   Int                     @default(0)
+  schedule             Schedule?               @relation(fields: [scheduleId], references: [id])
+  route                Route                   @relation(fields: [routeId], references: [id])
+  driver               Driver                  @relation(fields: [driverId], references: [id])
+  vehicle              Vehicle                 @relation(fields: [vehicleId], references: [id])
+  currentLocation      VehicleCurrentLocation?
+  locationHistory      TripLocationHistory[]
+  events               TripEvent[]
+
+  @@index([status, lastLocationAt])
+  @@index([driverId, status])
+  @@index([vehicleId, status])
+  @@map("trips")
+}
+
+model VehicleCurrentLocation {
+  tripId     String   @id @db.Uuid
+  vehicleId  String   @db.Uuid
+  latitude   Float
+  longitude  Float
+  accuracy   Float
+  speed      Float?
+  heading    Float?
+  recordedAt DateTime
+  updatedAt  DateTime @updatedAt
+  trip       Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId, recordedAt])
+}
+
+model TripLocationHistory {
+  id              String   @id @default(uuid()) @db.Uuid
+  eventId         String   @unique
+  tripId          String   @db.Uuid
+  latitude        Float
+  longitude       Float
+  accuracy        Float
+  speed           Float?
+  heading         Float?
+  recordedAt      DateTime
+  suspicious      Boolean  @default(false)
+  rejectionReason String?
+  receivedAt      DateTime @default(now())
+  trip            Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId, recordedAt])
+}
+
+model TripEvent {
+  id        String        @id @default(uuid()) @db.Uuid
+  tripId    String        @db.Uuid
+  type      TripEventType
+  stopId    String?       @db.Uuid
+  sequence  Int?
+  metadata  Json?
+  createdAt DateTime      @default(now())
+  trip      Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, type, stopId])
+  @@index([tripId, createdAt])
+}
+
+model RefreshSession {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String
+  expiresAt DateTime
+  revokedAt DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @db.Uuid
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  actor      User?    @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@index([entityType, entityId, createdAt])
+}

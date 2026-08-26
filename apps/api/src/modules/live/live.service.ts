@@ -1,0 +1,17 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../../common/prisma.service';
+import { locationFreshness } from '../../common/live-policy';
+import { EtaService } from './eta.service';
+const km=(a:{latitude:number;longitude:number},b:{latitude:number;longitude:number})=>{const r=6371,p=(x:number)=>x*Math.PI/180,dlat=p(b.latitude-a.latitude),dlng=p(b.longitude-a.longitude),v=Math.sin(dlat/2)**2+Math.cos(p(a.latitude))*Math.cos(p(b.latitude))*Math.sin(dlng/2)**2;return 2*r*Math.asin(Math.sqrt(v));};
+@Injectable()
+export class LiveService {
+ constructor(private db:PrismaService,private eta:EtaService){}
+ stops(){return this.db.stop.findMany({where:{active:true},select:{id:true,name:true,description:true,cityMunicipality:true,province:true,latitude:true,longitude:true},orderBy:{name:'asc'}});}
+ routes(){return this.db.route.findMany({where:{active:true},select:{id:true,name:true,direction:true,stops:{select:{sequence:true,boardingAllowed:true,dropoffAllowed:true,stop:{select:{id:true,name:true,latitude:true,longitude:true}}},orderBy:{sequence:'asc'}}}});}
+ async search(fromStopId:string,toStopId:string){
+  const trips=await this.db.trip.findMany({where:{status:'ACTIVE',route:{active:true,stops:{some:{stopId:fromStopId,boardingAllowed:true}}},currentLocation:{isNot:null}},include:{vehicle:true,currentLocation:true,route:{include:{stops:{include:{stop:true},orderBy:{sequence:'asc'}}}}}});
+  return trips.flatMap(t=>{const from=t.route.stops.find(s=>s.stopId===fromStopId),to=t.route.stops.find(s=>s.stopId===toStopId);if(!from||!to||from.sequence>=to.sequence||from.sequence<=t.lastPassedSequence)return[];const loc=t.currentLocation!,freshness=locationFreshness(loc.recordedAt);if(freshness==='OFFLINE')return[];const distanceKm=km(loc,from.stop),eta=this.eta.estimate(distanceKm,loc.speed);return[{tripId:t.id,vehicle:{type:t.vehicle.type,displayName:t.vehicle.displayName,bodyNumber:t.vehicle.bodyNumber},route:{name:t.route.name,direction:t.route.direction},status:t.status,boardingStop:from.stop,destinationStop:to.stop,nextStop:t.route.stops.find(s=>s.sequence>t.lastPassedSequence)?.stop??null,distanceKm:+distanceKm.toFixed(1),eta,freshness,lastUpdatedAt:loc.recordedAt,scheduledDepartureAt:t.scheduledDepartureAt}];});
+ }
+ async getTrip(id:string){const t=await this.db.trip.findFirst({where:{id,status:'ACTIVE'},include:{vehicle:{select:{type:true,displayName:true,bodyNumber:true,plateNumber:true}},route:{include:{stops:{include:{stop:true},orderBy:{sequence:'asc'}}}},currentLocation:true}});if(!t)throw new NotFoundException('Active trip not found');return{id:t.id,status:t.status,scheduledDepartureAt:t.scheduledDepartureAt,vehicle:t.vehicle,route:{id:t.route.id,name:t.route.name,direction:t.route.direction,stops:t.route.stops},nextStop:t.route.stops.find(s=>s.sequence>t.lastPassedSequence)?.stop??null,location:t.currentLocation?{latitude:t.currentLocation.latitude,longitude:t.currentLocation.longitude,speed:t.currentLocation.speed,heading:t.currentLocation.heading,recordedAt:t.currentLocation.recordedAt,freshness:locationFreshness(t.currentLocation.recordedAt)}:null};}
+ async getLocation(id:string){const l=await this.db.vehicleCurrentLocation.findUnique({where:{tripId:id},include:{trip:{select:{status:true}}}});if(!l||l.trip.status!=='ACTIVE')throw new NotFoundException('Live location unavailable');return{latitude:l.latitude,longitude:l.longitude,speed:l.speed,heading:l.heading,recordedAt:l.recordedAt,freshness:locationFreshness(l.recordedAt)};}
+}

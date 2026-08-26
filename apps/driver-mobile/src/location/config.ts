@@ -1,0 +1,1 @@
+export const trackingConfig={movingIntervalMs:Number(process.env.EXPO_PUBLIC_GPS_INTERVAL_MS??5000),distanceIntervalMeters:Number(process.env.EXPO_PUBLIC_GPS_DISTANCE_METERS??15),maxQueueSize:5000,syncBatchSize:500};

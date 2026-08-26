@@ -1,0 +1,1 @@
+{"name":"@sugat/passenger-mobile","version":"0.1.0","private":true,"dependencies":{"@sugat/shared-types":"workspace:*","react-native":"^0.76.6","socket.io-client":"^4.8.1"}}

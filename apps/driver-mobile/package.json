@@ -1,0 +1,42 @@
+{
+  "name": "@sugat/driver-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start --dev-client",
+    "start:go": "expo start",
+    "android": "expo run:android --device",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "doctor": "expo-doctor",
+    "build:android:development": "npx eas-cli@latest build --platform android --profile development",
+    "build:android:preview": "npx eas-cli@latest build --platform android --profile preview",
+    "build:ios:development": "npx eas-cli@latest build --platform ios --profile development",
+    "build:ios:preview": "npx eas-cli@latest build --platform ios --profile preview",
+    "build:ios:production": "npx eas-cli@latest build --platform ios --profile production"
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.25.0",
+    "@react-native-async-storage/async-storage": "1.23.1",
+    "@react-native-community/netinfo": "11.4.1",
+    "@sugat/shared-types": "workspace:*",
+    "expo": "~52.0.47",
+    "expo-build-properties": "~0.13.3",
+    "expo-dev-client": "~5.0.20",
+    "expo-linking": "~7.0.5",
+    "expo-location": "~18.0.10",
+    "expo-notifications": "~0.29.14",
+    "expo-secure-store": "~14.0.1",
+    "expo-status-bar": "~2.0.1",
+    "expo-task-manager": "~12.0.6",
+    "react": "18.3.1",
+    "react-native": "0.76.9",
+    "react-native-safe-area-context": "4.12.0"
+  },
+  "devDependencies": {
+    "@types/react": "~18.3.12",
+    "expo-doctor": "^1.13.1",
+    "typescript": "^5.7.3"
+  }
+}
