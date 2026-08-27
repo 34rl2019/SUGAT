@@ -1,0 +1,76 @@
+export type CanonicalStop = {
+  name: string;
+  cityMunicipality: string;
+  province: 'Southern Leyte' | 'Leyte' | 'Tacloban City';
+  latitude: number;
+  longitude: number;
+  needsVisualReview?: boolean;
+};
+
+const row = (name: string, cityMunicipality: string, province: CanonicalStop['province'], latitude: number, longitude: number, needsVisualReview = false): CanonicalStop =>
+  ({ name, cityMunicipality, province, latitude, longitude, needsVisualReview });
+
+export const leyteCanonicalStops: CanonicalStop[] = [
+  row('Anahawan - Town Center', 'Anahawan', 'Southern Leyte', 10.27418, 125.25836),
+  row('Bontoc - Town Center', 'Bontoc', 'Southern Leyte', 10.35439, 124.97061),
+  row('Hinunangan - Town Center', 'Hinunangan', 'Southern Leyte', 10.39404, 125.20019),
+  row('Hinundayan - Town Center', 'Hinundayan', 'Southern Leyte', 10.35135, 125.25297),
+  row('Libagon - Town Center', 'Libagon', 'Southern Leyte', 10.29627, 125.05090),
+  row('Liloan - Town Center', 'Liloan', 'Southern Leyte', 10.15632, 125.11779),
+  row('Maasin City - City Center', 'Maasin City', 'Southern Leyte', 10.13272, 124.84082),
+  row('Macrohon - Town Center', 'Macrohon', 'Southern Leyte', 10.07972, 124.94306),
+  row('Malitbog - Town Center', 'Malitbog', 'Southern Leyte', 10.16018, 125.00082),
+  row('Padre Burgos - Town Center', 'Padre Burgos', 'Southern Leyte', 10.03694, 125.01917),
+  row('Pintuyan - Town Center', 'Pintuyan', 'Southern Leyte', 9.94400, 125.24900),
+  row('Saint Bernard - Municipal Center', 'Saint Bernard', 'Southern Leyte', 10.31728, 125.11671),
+  row('San Francisco - Municipal Center', 'San Francisco', 'Southern Leyte', 10.07165, 125.16701),
+  row('San Juan - Town Center', 'San Juan', 'Southern Leyte', 10.26694, 125.17556),
+  row('San Ricardo - Municipal Center', 'San Ricardo', 'Southern Leyte', 9.99107, 125.26052),
+  row('Silago - Municipal Center', 'Silago', 'Southern Leyte', 10.53333, 125.11667),
+  row('Sogod - Town Center', 'Sogod', 'Southern Leyte', 10.39050, 124.98490),
+  row('Tomas Oppus - Town Center', 'Tomas Oppus', 'Southern Leyte', 10.25056, 124.98306),
+  row('Limasawa - Town Center', 'Limasawa', 'Southern Leyte', 9.93472, 125.07000),
+  row('Abuyog - Town Center', 'Abuyog', 'Leyte', 10.74700, 125.01070),
+  row('Alangalang - Town Center', 'Alangalang', 'Leyte', 11.20611, 124.84667),
+  row('Albuera - Town Center', 'Albuera', 'Leyte', 10.91666, 124.69437),
+  row('Babatngon - Town Center', 'Babatngon', 'Leyte', 11.42318, 124.84482),
+  row('Barugo - Town Center', 'Barugo', 'Leyte', 11.32417, 124.73833),
+  row('Bato - Town Center', 'Bato', 'Leyte', 10.32778, 124.79111),
+  row('Baybay City - City Center', 'Baybay City', 'Leyte', 10.67850, 124.80060),
+  row('Burauen - Town Center', 'Burauen', 'Leyte', 10.97556, 124.89278),
+  row('Calubian - Town Center', 'Calubian', 'Leyte', 11.44673, 124.42867),
+  row('Capoocan - Town Center', 'Capoocan', 'Leyte', 11.29333, 124.64194),
+  row('Carigara - Town Center', 'Carigara', 'Leyte', 11.29811, 124.67895),
+  row('Dagami - Town Center', 'Dagami', 'Leyte', 11.06083, 124.90278),
+  row('Dulag - Town Center', 'Dulag', 'Leyte', 10.95324, 125.03345),
+  row('Hilongos - Town Center', 'Hilongos', 'Leyte', 10.37444, 124.74972),
+  row('Hindang - Town Center', 'Hindang', 'Leyte', 10.43417, 124.72917),
+  row('Inopacan - Town Center', 'Inopacan', 'Leyte', 10.49970, 124.74050),
+  row('Isabel - Town Center', 'Isabel', 'Leyte', 10.92610, 124.43440),
+  row('Jaro - Town Center', 'Jaro', 'Leyte', 11.18940, 124.78530),
+  row('Javier - Town Center', 'Javier', 'Leyte', 10.79210, 124.93640),
+  row('Julita - Town Center', 'Julita', 'Leyte', 10.97234, 124.96232),
+  row('Kananga - Town Center', 'Kananga', 'Leyte', 11.18670, 124.56010),
+  row('La Paz - Town Center', 'La Paz', 'Leyte', 10.89250, 124.95583),
+  row('Leyte - Town Center', 'Leyte', 'Leyte', 11.36687, 124.48239),
+  row('MacArthur - Town Center', 'MacArthur', 'Leyte', 10.83472, 124.99528),
+  row('Mahaplag - Town Center', 'Mahaplag', 'Leyte', 10.60524, 124.96467),
+  row('Matag-ob - Town Center', 'Matag-ob', 'Leyte', 11.14560, 124.47230),
+  row('Matalom - Town Center', 'Matalom', 'Leyte', 10.28306, 124.78778),
+  row('Mayorga - Town Center', 'Mayorga', 'Leyte', 10.90000, 125.00000),
+  row('Merida - Town Center', 'Merida', 'Leyte', 10.90900, 124.53700, true),
+  row('Ormoc City - City Center', 'Ormoc City', 'Leyte', 11.00639, 124.60750),
+  row('Palo - Town Center', 'Palo', 'Leyte', 11.15750, 124.99083),
+  row('Palompon - Town Center', 'Palompon', 'Leyte', 11.05080, 124.38430),
+  row('Pastrana - Town Center', 'Pastrana', 'Leyte', 11.13667, 124.88556),
+  row('San Isidro - Town Center', 'San Isidro', 'Leyte', 11.42400, 124.35200, true),
+  row('San Miguel - Town Center', 'San Miguel', 'Leyte', 11.26722, 124.83250),
+  row('Santa Fe - Town Center', 'Santa Fe', 'Leyte', 11.18500, 124.91600, true),
+  row('Tabango - Town Center', 'Tabango', 'Leyte', 11.30700, 124.37300, true),
+  row('Tabontabon - Town Center', 'Tabontabon', 'Leyte', 11.04083, 124.96111),
+  row('Tanauan - Town Center', 'Tanauan', 'Leyte', 11.10944, 125.01556),
+  row('Tolosa - Town Center', 'Tolosa', 'Leyte', 11.05900, 125.03600, true),
+  row('Tunga - Town Center', 'Tunga', 'Leyte', 11.24556, 124.75167),
+  row('Villaba - Town Center', 'Villaba', 'Leyte', 11.21300, 124.39300, true),
+  row('Tacloban City - City Center', 'Tacloban City', 'Tacloban City', 11.24333, 125.00472),
+];

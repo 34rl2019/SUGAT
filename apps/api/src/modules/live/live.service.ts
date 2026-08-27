@@ -6,7 +6,7 @@ const km=(a:{latitude:number;longitude:number},b:{latitude:number;longitude:numb
 @Injectable()
 export class LiveService {
  constructor(private db:PrismaService,private eta:EtaService){}
- stops(){return this.db.stop.findMany({where:{active:true},select:{id:true,name:true,description:true,cityMunicipality:true,province:true,latitude:true,longitude:true},orderBy:{name:'asc'}});}
+ stops(){return this.db.stop.findMany({where:{active:true},select:{id:true,name:true,description:true,cityMunicipality:true,province:true,latitude:true,longitude:true},orderBy:[{province:'asc'},{cityMunicipality:'asc'},{name:'asc'}]});}
  routes(){return this.db.route.findMany({where:{active:true},select:{id:true,name:true,direction:true,stops:{select:{sequence:true,boardingAllowed:true,dropoffAllowed:true,stop:{select:{id:true,name:true,latitude:true,longitude:true}}},orderBy:{sequence:'asc'}}}});}
  async search(fromStopId:string,toStopId:string){
   const trips=await this.db.trip.findMany({where:{status:'ACTIVE',route:{active:true,stops:{some:{stopId:fromStopId,boardingAllowed:true}}},currentLocation:{isNot:null}},include:{vehicle:true,currentLocation:true,route:{include:{stops:{include:{stop:true},orderBy:{sequence:'asc'}}}}}});

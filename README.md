@@ -43,6 +43,22 @@ The driver remains a native mobile app because reliable foreground-service/backg
 
 `202608260001_final_sugat_domain` is the complete initial SUGAT schema: authentication, drivers, vehicles, stops, routes, schedules, trips, current/history locations, events, sessions, audits, foreign keys, indexes, PostGIS, and GiST geography indexes. It is intended for a database where this migration has never previously been applied. If an earlier partial copy was applied anywhere, reconcile its migration history before deployment. Never use `db push` in production.
 
+## Canonical Leyte stop import
+
+The idempotent importer adds only the 62 canonical municipality/city-center stops for Leyte, Southern Leyte, and Tacloban City. It does not create routes, schedules, trips, vehicles, drivers, assignments, or GPS records. Review the dry run before writing:
+
+```bash
+corepack pnpm --filter @sugat/api run import:leyte-stops --dry-run
+```
+
+Production writes require explicit confirmation:
+
+```bash
+NODE_ENV=production corepack pnpm --filter @sugat/api run import:leyte-stops --confirm-production-import
+```
+
+The commands load `DATABASE_URL` from the root `.env`. Existing stops are matched by normalized name, municipality/city, and province. Canonical fields may be corrected while identity, descriptions, activation state, and unrelated manually maintained data remain unchanged.
+
 ## Remaining pilot work
 
 - Complete physical end-to-end validation of the Admin configuration workflow against the deployed PostGIS database and mobile Driver App.
