@@ -7,3 +7,5 @@ coverage
 apps/api/prisma/dev.db
 apps/driver-mobile/android
 apps/driver-mobile/ios
+apps/*/dist/
+/var/private/

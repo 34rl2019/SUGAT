@@ -1,16 +1,18 @@
 # SUGAT
 
-**AYAW HULAT. SUGATA.**
+**WHERE JOURNEYS MEET**
 
 SUGAT is a free community platform that makes legitimate long-distance buses and vans visible to passengers along an ordered route. Passengers never create an account: they select a boarding stop and destination, view matching active trips, and watch the vehicle location update live.
 
 ## Architecture
 
 - `apps/api`: NestJS, Prisma, PostgreSQL/PostGIS, Socket.IO
-- `apps/passenger-web`: responsive public React/Vite experience; recommended primary passenger channel because it has the lowest adoption friction
-- `apps/passenger-mobile`: optional React Native public client foundation
+- `apps/passenger-web`: branded, responsive public React/Vite trip search and live-tracking experience
+- `apps/passenger-mobile`: Expo Android guest app with stop search, live vehicle maps, local favorites, connectivity state, and foreground approaching alerts
 - `apps/driver-mobile`: Expo Android/iOS Driver App with background GPS, secure sessions, and offline synchronization
-- `packages`: shared domain types and utilities
+- `apps/admin-web`: branded, responsive protected management and operations console
+- `apps/admin-mobile`: Expo Android protected operations app with dashboards, live maps, resource lists, and trip assignment
+- `packages`: shared domain types, utilities, and centralized SUGAT design tokens
 
 The driver remains a native mobile app because reliable foreground-service/background GPS cannot be guaranteed by an ordinary browser. The responsive Admin Web consumes the protected operational API.
 
@@ -43,30 +45,33 @@ The driver remains a native mobile app because reliable foreground-service/backg
 
 `202608260001_final_sugat_domain` is the complete initial SUGAT schema: authentication, drivers, vehicles, stops, routes, schedules, trips, current/history locations, events, sessions, audits, foreign keys, indexes, PostGIS, and GiST geography indexes. It is intended for a database where this migration has never previously been applied. If an earlier partial copy was applied anywhere, reconcile its migration history before deployment. Never use `db push` in production.
 
-## Canonical Leyte stop import
+## Canonical Region VIII stop import
 
-The idempotent importer adds only the 62 canonical municipality/city-center stops for Leyte, Southern Leyte, and Tacloban City. It does not create routes, schedules, trips, vehicles, drivers, assignments, or GPS records. Review the dry run before writing:
+The idempotent importer maintains all 143 current municipality/city geographic anchors across Leyte, Southern Leyte, Biliran, Samar, Eastern Samar, and Northern Samar. Passenger labels use the natural `<MUNICIPALITY OR CITY> <PROVINCE>` form; no invented terminal or generic center is implied. It does not create routes, schedules, trips, vehicles, drivers, assignments, or GPS records. Review the dry run before writing:
 
 ```bash
-corepack pnpm --filter @sugat/api run import:leyte-stops --dry-run
+corepack pnpm --filter @sugat/api run import:region-viii-stops --dry-run
 ```
 
 Production writes require explicit confirmation:
 
 ```bash
-NODE_ENV=production corepack pnpm --filter @sugat/api run import:leyte-stops --confirm-production-import
+NODE_ENV=production corepack pnpm --filter @sugat/api run import:region-viii-stops --confirm-production-import
 ```
 
-The commands load `DATABASE_URL` from the root `.env`. Existing stops are matched by normalized name, municipality/city, and province. Canonical fields may be corrected while identity, descriptions, activation state, and unrelated manually maintained data remain unchanged.
+The commands load `DATABASE_URL` from the root `.env`. Existing stops are matched by normalized municipality/city plus province, including the legacy `Tacloban City` province value. This allows old center labels and coordinates to be corrected in place while preserving each database ID, RouteStop relationships, descriptions, activation state, and unrelated manually maintained data. The legacy `import:leyte-stops` command remains as a compatible alias.
 
 ## Remaining pilot work
 
+- Complete physical Android validation of the new Passenger and Admin apps and configure any production Google Maps key required by the chosen native map provider.
 - Complete physical end-to-end validation of the Admin configuration workflow against the deployed PostGIS database and mobile Driver App.
 - Complete physical Android/iOS field validation of the implemented Driver App.
 - Render a real MapLibre base map; current live web detail displays real coordinates and realtime movement on a map-status surface.
 - Connect Redis' Socket.IO adapter for multiple API replicas and add a scheduled stale-event worker.
 - Add production signing, store assets, and field-device battery/vendor testing.
 - Add endpoint-level integration tests against PostGIS/Redis and operational metrics exporters.
+
+The current API has no passenger accounts, cloud-synced favorites, push-token registration, nearby-vehicle query, dedicated reports, or dedicated alert-management endpoints. The clients do not fabricate these capabilities: passenger favorites remain local, approaching notifications are foreground/local, and operational warning surfaces use only existing dashboard/live data.
 
 No booking, passenger identity, payments, tickets, chat, ratings, operator portal, or ride matching is present.
 
