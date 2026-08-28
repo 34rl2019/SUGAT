@@ -5,5 +5,6 @@ import { JwtGuard } from '../../common/auth';
 import { TripsController } from './trips.controller';
 import { TripsService } from './trips.service';
 import { LiveModule } from '../live/live.module';
-@Module({ imports: [JwtModule.register({}),LiveModule], controllers: [TripsController], providers: [TripsService, PrismaService, JwtGuard], exports: [TripsService] })
+import { DriverComplianceService } from '../../common/driver-compliance.service';
+@Module({ imports: [JwtModule.register({}),LiveModule], controllers: [TripsController], providers: [TripsService, PrismaService, JwtGuard, DriverComplianceService], exports: [TripsService] })
 export class TripsModule {}

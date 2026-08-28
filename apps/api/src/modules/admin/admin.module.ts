@@ -4,5 +4,6 @@ import { PrismaService } from '../../common/prisma.service';
 import { JwtGuard } from '../../common/auth';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
-@Module({imports:[JwtModule.register({})],controllers:[AdminController],providers:[AdminService,PrismaService,JwtGuard]})
+import { DriverComplianceService } from '../../common/driver-compliance.service';
+@Module({imports:[JwtModule.register({})],controllers:[AdminController],providers:[AdminService,PrismaService,JwtGuard,DriverComplianceService]})
 export class AdminModule {}

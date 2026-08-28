@@ -3,40 +3,72 @@ import { AccountStatus, Prisma, Role, TripStatus } from '@prisma/client';
 import argon2 from 'argon2';
 import { PrismaService } from '../../common/prisma.service';
 import { livePolicy, locationFreshness } from '../../common/live-policy';
+import { duplicateEmailConflict, isPrismaUniqueConstraintError, normalizeEmail } from '../../common/user-email';
+import { DriverComplianceService } from '../../common/driver-compliance.service';
 
 const blockingTripStatuses: TripStatus[] = ['READY', 'ACTIVE'];
 
 @Injectable()
 export class AdminService {
-  constructor(private db: PrismaService) {}
+  constructor(private db: PrismaService, private compliance: DriverComplianceService) {}
   private audit(actorId: string, action: string, entityType: string, entityId: string) { return this.db.auditLog.create({ data: { actorId, action, entityType, entityId } }); }
 
   async dashboard() {
     const day = new Date(); day.setHours(0, 0, 0, 0);
     const staleBefore = new Date(Date.now() - livePolicy.staleAfterSeconds * 1_000);
-    const [activeTrips, activeBuses, activeVans, gpsStale, completedToday] = await Promise.all([
+    const now = new Date(), in7Days = new Date(now.getTime() + 7 * 86_400_000), in30Days = new Date(now.getTime() + 30 * 86_400_000);
+    const [activeTrips, activeBuses, activeVans, gpsStale, completedToday, licensesExpiringWithin30Days, licensesExpiringWithin7Days, expiredLicenses, driversPendingVerification] = await Promise.all([
       this.db.trip.count({ where: { status: 'ACTIVE' } }),
       this.db.trip.count({ where: { status: 'ACTIVE', vehicle: { type: 'BUS' } } }),
       this.db.trip.count({ where: { status: 'ACTIVE', vehicle: { type: 'VAN' } } }),
       this.db.trip.count({ where: { status: 'ACTIVE', OR: [{ lastLocationAt: null }, { lastLocationAt: { lt: staleBefore } }] } }),
       this.db.trip.count({ where: { status: 'COMPLETED', endedAt: { gte: day } } }),
+      this.db.driver.count({ where: { licenseExpiresAt: { gte: now, lte: in30Days } } }),
+      this.db.driver.count({ where: { licenseExpiresAt: { gte: now, lte: in7Days } } }),
+      this.db.driver.count({ where: { licenseExpiresAt: { lt: now } } }),
+      this.db.driver.count({ where: { OR: [{ identityVerificationStatus: { in: ['UNVERIFIED', 'PENDING_VERIFICATION', 'PENDING_REVERIFICATION'] } }, { licenseVerificationStatus: { in: ['UNVERIFIED', 'PENDING_VERIFICATION', 'PENDING_REVERIFICATION'] } }] } }),
     ]);
-    return { activeTrips, activeBuses, activeVans, driversOnActiveTrips: activeTrips, gpsStale, completedToday };
+    return { activeTrips, activeBuses, activeVans, driversOnActiveTrips: activeTrips, gpsStale, completedToday, licensesExpiringWithin30Days, licensesExpiringWithin7Days, expiredLicenses, driversPendingVerification };
   }
 
-  drivers() { return this.db.driver.findMany({ include: { user: { select: { email: true, phone: true, accountStatus: true } }, vehicles: true }, orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }] }); }
+  async drivers() { const drivers = await this.db.driver.findMany({ include: { user: { select: { email: true, phone: true, accountStatus: true } }, vehicles: true }, orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }] }); return drivers.map(driver => ({ ...driver, compliance: this.compliance.evaluate(driver) })); }
   async createDriver(actorId: string, dto: any) {
     const { email, password, phone, licenseExpiresAt, ...driver } = dto;
-    const created = await this.db.user.create({ data: { email: email.toLowerCase(), phone: phone || null, passwordHash: await argon2.hash(password), role: Role.DRIVER, driver: { create: { ...driver, licenseExpiresAt: licenseExpiresAt ? new Date(licenseExpiresAt) : null } } }, include: { driver: true } });
+    const normalizedEmail = normalizeEmail(email);
+    if (await this.db.user.findUnique({ where: { email: normalizedEmail }, select: { id: true } })) throw duplicateEmailConflict();
+    let created;
+    try {
+      created = await this.db.user.create({ data: { email: normalizedEmail, phone: phone || null, passwordHash: await argon2.hash(password), role: Role.DRIVER, driver: { create: { ...driver, licenseExpiresAt: licenseExpiresAt ? new Date(licenseExpiresAt) : null } } }, include: { driver: true } });
+    } catch (error) {
+      if (isPrismaUniqueConstraintError(error, 'email')) throw duplicateEmailConflict();
+      if (isPrismaUniqueConstraintError(error)) throw new ConflictException('A user with these account details already exists.');
+      throw error;
+    }
     await this.audit(actorId, 'driver.created', 'Driver', created.driver!.id); return created.driver;
   }
   async updateDriver(actorId: string, id: string, dto: any) {
-    if (!await this.db.driver.findUnique({ where: { id } })) throw new NotFoundException('Driver not found');
+    const existingDriver = await this.db.driver.findUnique({ where: { id }, select: { userId: true, licenseNumber: true, licenseExpiresAt: true, identityVerificationStatus: true, licenseVerificationStatus: true } });
+    if (!existingDriver) throw new NotFoundException('Driver not found');
     const { email, phone, password, accountStatus, licenseExpiresAt, ...driver } = dto;
     const user: Prisma.UserUpdateInput = {};
-    if (email !== undefined) user.email = email.toLowerCase(); if (phone !== undefined) user.phone = phone || null;
+    if (email !== undefined) {
+      const normalizedEmail = normalizeEmail(email);
+      if (await this.db.user.findFirst({ where: { email: normalizedEmail, id: { not: existingDriver.userId } }, select: { id: true } })) throw duplicateEmailConflict();
+      user.email = normalizedEmail;
+    }
+    if (phone !== undefined) user.phone = phone || null;
     if (password) user.passwordHash = await argon2.hash(password); if (accountStatus !== undefined) user.accountStatus = accountStatus;
-    const updated = await this.db.driver.update({ where: { id }, data: { ...driver, ...(licenseExpiresAt !== undefined ? { licenseExpiresAt: licenseExpiresAt ? new Date(licenseExpiresAt) : null } : {}), ...(Object.keys(user).length ? { user: { update: user } } : {}) }, include: { user: { select: { email: true, phone: true, accountStatus: true } }, vehicles: true } });
+    let updated;
+    try {
+      const nextExpiry=licenseExpiresAt===undefined?existingDriver.licenseExpiresAt:licenseExpiresAt?new Date(licenseExpiresAt):null;
+      const evidenceChanged=(driver.licenseNumber!==undefined&&driver.licenseNumber!==existingDriver.licenseNumber)||(licenseExpiresAt!==undefined&&nextExpiry?.getTime()!==existingDriver.licenseExpiresAt?.getTime());
+      const reverify=evidenceChanged&&(existingDriver.identityVerificationStatus==='APPROVED'||existingDriver.licenseVerificationStatus==='APPROVED');
+      updated = await this.db.driver.update({ where: { id }, data: { ...driver, ...(licenseExpiresAt !== undefined ? { licenseExpiresAt: nextExpiry } : {}), ...(reverify?{identityVerificationStatus:'PENDING_REVERIFICATION',licenseVerificationStatus:'PENDING_REVERIFICATION'}:{}), ...(Object.keys(user).length ? { user: { update: user } } : {}) }, include: { user: { select: { email: true, phone: true, accountStatus: true } }, vehicles: true } });
+    } catch (error) {
+      if (isPrismaUniqueConstraintError(error, 'email')) throw duplicateEmailConflict();
+      if (isPrismaUniqueConstraintError(error)) throw new ConflictException('A user with these account details already exists.');
+      throw error;
+    }
     await this.audit(actorId, 'driver.updated', 'Driver', id); return updated;
   }
   async driverStatus(actorId: string, id: string, active: boolean) {
@@ -95,7 +127,7 @@ export class AdminService {
   }
 
   async live() {
-    const trips = await this.db.trip.findMany({ where: { status: 'ACTIVE' }, include: { currentLocation: true, vehicle: true, driver: true, route: { include: { stops: { include: { stop: true }, orderBy: { sequence: 'asc' } } } } }, orderBy: { startedAt: 'desc' } });
-    return trips.map(trip => ({ ...trip, gpsStatus: trip.currentLocation ? locationFreshness(trip.currentLocation.recordedAt) : 'OFFLINE', nextStop: trip.route.stops.find(stop => stop.sequence > trip.lastPassedSequence)?.stop ?? null }));
+    const trips = await this.db.trip.findMany({ where: { status: 'ACTIVE' }, include: { currentLocation: true, vehicle: true, driver: { include: { user: true } }, route: { include: { stops: { include: { stop: true }, orderBy: { sequence: 'asc' } } } } }, orderBy: { startedAt: 'desc' } });
+    return trips.map(trip => { const compliance = this.compliance.evaluate(trip.driver); return { ...trip, complianceAlert: compliance.eligible ? null : compliance, gpsStatus: trip.currentLocation ? locationFreshness(trip.currentLocation.recordedAt) : 'OFFLINE', nextStop: trip.route.stops.find(stop => stop.sequence > trip.lastPassedSequence)?.stop ?? null }; });
   }
 }

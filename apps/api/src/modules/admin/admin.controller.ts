@@ -1,18 +1,18 @@
 import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { AccountStatus, Role, VehicleType } from '@prisma/client';
 import { IsArray, IsBoolean, IsDateString, IsEmail, IsEnum, IsInt, IsNumber, IsOptional, IsString, IsUUID, Max, Min, MinLength, ValidateIf, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { AuthUser, CurrentUser, JwtGuard, Roles } from '../../common/auth';
 import { AdminService } from './admin.service';
 
 class DriverDto {
-  @IsEmail() email!: string; @MinLength(10) password!: string;
+  @Transform(({ value }) => typeof value === 'string' ? value.trim().toLowerCase() : value) @IsEmail() email!: string; @MinLength(10) password!: string;
   @IsString() firstName!: string; @IsOptional() @IsString() middleName?: string; @IsString() lastName!: string;
   @IsOptional() @IsString() phone?: string; @IsOptional() @IsString() photoUrl?: string;
   @IsOptional() @IsString() licenseNumber?: string; @IsOptional() @IsDateString() licenseExpiresAt?: string;
 }
 class UpdateDriverDto {
-  @IsOptional() @IsEmail() email?: string; @IsOptional() @MinLength(10) password?: string;
+  @IsOptional() @Transform(({ value }) => typeof value === 'string' ? value.trim().toLowerCase() : value) @IsEmail() email?: string; @IsOptional() @MinLength(10) password?: string;
   @IsOptional() @IsString() firstName?: string; @IsOptional() @IsString() middleName?: string; @IsOptional() @IsString() lastName?: string;
   @IsOptional() @IsString() phone?: string; @IsOptional() @IsString() photoUrl?: string;
   @IsOptional() @IsString() licenseNumber?: string; @IsOptional() @IsDateString() licenseExpiresAt?: string;

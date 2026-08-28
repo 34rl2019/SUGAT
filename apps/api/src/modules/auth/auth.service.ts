@@ -3,11 +3,12 @@ import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../../common/prisma.service';
+import { normalizeEmail } from '../../common/user-email';
 @Injectable()
 export class AuthService {
   constructor(private db: PrismaService, private jwt: JwtService) {}
   async login(dto: { email: string; password: string }) {
-    const user = await this.db.user.findUnique({ where: { email: dto.email.toLowerCase() } });
+    const user = await this.db.user.findUnique({ where: { email: normalizeEmail(dto.email) } });
     if (!user || !(await argon2.verify(user.passwordHash, dto.password)) || user.accountStatus !== 'ACTIVE') throw new UnauthorizedException('Invalid credentials');
     return this.issue(user.id, user.role);
   }

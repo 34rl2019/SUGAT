@@ -20,6 +20,20 @@ enum AccountStatus {
   DISABLED
 }
 
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING_VERIFICATION
+  APPROVED
+  REJECTED
+  PENDING_REVERIFICATION
+}
+
+enum VerificationDocumentType {
+  LICENSE_FRONT
+  LICENSE_BACK
+  SELFIE
+}
+
 enum VehicleType {
   BUS
   VAN
@@ -57,6 +71,7 @@ model User {
   driver        Driver?
   sessions      RefreshSession[]
   auditLogs     AuditLog[]       @relation("AuditActor")
+  reviewedVerificationSubmissions DriverVerificationSubmission[] @relation("VerificationReviewer")
 }
 
 model Driver {
@@ -68,11 +83,47 @@ model Driver {
   photoUrl         String?
   licenseNumber    String?
   licenseExpiresAt DateTime?
+  identityVerificationStatus VerificationStatus @default(UNVERIFIED)
+  licenseVerificationStatus  VerificationStatus @default(UNVERIFIED)
   active           Boolean    @default(true)
   user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   vehicles         Vehicle[]  @relation("AssignedDriver")
   trips            Trip[]
   schedules        Schedule[]
+  verificationSubmissions DriverVerificationSubmission[]
+
+  @@index([identityVerificationStatus])
+  @@index([licenseVerificationStatus])
+}
+
+model DriverVerificationSubmission {
+  id             String             @id @default(uuid()) @db.Uuid
+  driverId       String             @db.Uuid
+  status         VerificationStatus @default(PENDING_VERIFICATION)
+  rejectionReason String?
+  submittedAt    DateTime           @default(now())
+  reviewedAt     DateTime?
+  reviewedById   String?            @db.Uuid
+  driver         Driver             @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  documents      DriverVerificationDocument[]
+  reviewedBy     User?              @relation("VerificationReviewer", fields: [reviewedById], references: [id])
+
+  @@index([driverId, submittedAt])
+  @@index([status, submittedAt])
+}
+
+model DriverVerificationDocument {
+  id           String                   @id @default(uuid()) @db.Uuid
+  submissionId String                   @db.Uuid
+  type         VerificationDocumentType
+  storageKey   String                   @unique
+  mimeType     String
+  sizeBytes    Int
+  sha256       String
+  createdAt    DateTime                 @default(now())
+  submission   DriverVerificationSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionId, type])
 }
 
 model Vehicle {
