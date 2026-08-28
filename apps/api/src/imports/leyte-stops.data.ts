@@ -1,76 +1,152 @@
-export type CanonicalStop = {
-  name: string;
-  cityMunicipality: string;
-  province: 'Southern Leyte' | 'Leyte' | 'Tacloban City';
-  latitude: number;
-  longitude: number;
-  needsVisualReview?: boolean;
-};
-
-const row = (name: string, cityMunicipality: string, province: CanonicalStop['province'], latitude: number, longitude: number, needsVisualReview = false): CanonicalStop =>
-  ({ name, cityMunicipality, province, latitude, longitude, needsVisualReview });
-
-export const leyteCanonicalStops: CanonicalStop[] = [
-  row('Anahawan - Town Center', 'Anahawan', 'Southern Leyte', 10.27418, 125.25836),
-  row('Bontoc - Town Center', 'Bontoc', 'Southern Leyte', 10.35439, 124.97061),
-  row('Hinunangan - Town Center', 'Hinunangan', 'Southern Leyte', 10.39404, 125.20019),
-  row('Hinundayan - Town Center', 'Hinundayan', 'Southern Leyte', 10.35135, 125.25297),
-  row('Libagon - Town Center', 'Libagon', 'Southern Leyte', 10.29627, 125.05090),
-  row('Liloan - Town Center', 'Liloan', 'Southern Leyte', 10.15632, 125.11779),
-  row('Maasin City - City Center', 'Maasin City', 'Southern Leyte', 10.13272, 124.84082),
-  row('Macrohon - Town Center', 'Macrohon', 'Southern Leyte', 10.07972, 124.94306),
-  row('Malitbog - Town Center', 'Malitbog', 'Southern Leyte', 10.16018, 125.00082),
-  row('Padre Burgos - Town Center', 'Padre Burgos', 'Southern Leyte', 10.03694, 125.01917),
-  row('Pintuyan - Town Center', 'Pintuyan', 'Southern Leyte', 9.94400, 125.24900),
-  row('Saint Bernard - Municipal Center', 'Saint Bernard', 'Southern Leyte', 10.31728, 125.11671),
-  row('San Francisco - Municipal Center', 'San Francisco', 'Southern Leyte', 10.07165, 125.16701),
-  row('San Juan - Town Center', 'San Juan', 'Southern Leyte', 10.26694, 125.17556),
-  row('San Ricardo - Municipal Center', 'San Ricardo', 'Southern Leyte', 9.99107, 125.26052),
-  row('Silago - Municipal Center', 'Silago', 'Southern Leyte', 10.53333, 125.11667),
-  row('Sogod - Town Center', 'Sogod', 'Southern Leyte', 10.39050, 124.98490),
-  row('Tomas Oppus - Town Center', 'Tomas Oppus', 'Southern Leyte', 10.25056, 124.98306),
-  row('Limasawa - Town Center', 'Limasawa', 'Southern Leyte', 9.93472, 125.07000),
-  row('Abuyog - Town Center', 'Abuyog', 'Leyte', 10.74700, 125.01070),
-  row('Alangalang - Town Center', 'Alangalang', 'Leyte', 11.20611, 124.84667),
-  row('Albuera - Town Center', 'Albuera', 'Leyte', 10.91666, 124.69437),
-  row('Babatngon - Town Center', 'Babatngon', 'Leyte', 11.42318, 124.84482),
-  row('Barugo - Town Center', 'Barugo', 'Leyte', 11.32417, 124.73833),
-  row('Bato - Town Center', 'Bato', 'Leyte', 10.32778, 124.79111),
-  row('Baybay City - City Center', 'Baybay City', 'Leyte', 10.67850, 124.80060),
-  row('Burauen - Town Center', 'Burauen', 'Leyte', 10.97556, 124.89278),
-  row('Calubian - Town Center', 'Calubian', 'Leyte', 11.44673, 124.42867),
-  row('Capoocan - Town Center', 'Capoocan', 'Leyte', 11.29333, 124.64194),
-  row('Carigara - Town Center', 'Carigara', 'Leyte', 11.29811, 124.67895),
-  row('Dagami - Town Center', 'Dagami', 'Leyte', 11.06083, 124.90278),
-  row('Dulag - Town Center', 'Dulag', 'Leyte', 10.95324, 125.03345),
-  row('Hilongos - Town Center', 'Hilongos', 'Leyte', 10.37444, 124.74972),
-  row('Hindang - Town Center', 'Hindang', 'Leyte', 10.43417, 124.72917),
-  row('Inopacan - Town Center', 'Inopacan', 'Leyte', 10.49970, 124.74050),
-  row('Isabel - Town Center', 'Isabel', 'Leyte', 10.92610, 124.43440),
-  row('Jaro - Town Center', 'Jaro', 'Leyte', 11.18940, 124.78530),
-  row('Javier - Town Center', 'Javier', 'Leyte', 10.79210, 124.93640),
-  row('Julita - Town Center', 'Julita', 'Leyte', 10.97234, 124.96232),
-  row('Kananga - Town Center', 'Kananga', 'Leyte', 11.18670, 124.56010),
-  row('La Paz - Town Center', 'La Paz', 'Leyte', 10.89250, 124.95583),
-  row('Leyte - Town Center', 'Leyte', 'Leyte', 11.36687, 124.48239),
-  row('MacArthur - Town Center', 'MacArthur', 'Leyte', 10.83472, 124.99528),
-  row('Mahaplag - Town Center', 'Mahaplag', 'Leyte', 10.60524, 124.96467),
-  row('Matag-ob - Town Center', 'Matag-ob', 'Leyte', 11.14560, 124.47230),
-  row('Matalom - Town Center', 'Matalom', 'Leyte', 10.28306, 124.78778),
-  row('Mayorga - Town Center', 'Mayorga', 'Leyte', 10.90000, 125.00000),
-  row('Merida - Town Center', 'Merida', 'Leyte', 10.90900, 124.53700, true),
-  row('Ormoc City - City Center', 'Ormoc City', 'Leyte', 11.00639, 124.60750),
-  row('Palo - Town Center', 'Palo', 'Leyte', 11.15750, 124.99083),
-  row('Palompon - Town Center', 'Palompon', 'Leyte', 11.05080, 124.38430),
-  row('Pastrana - Town Center', 'Pastrana', 'Leyte', 11.13667, 124.88556),
-  row('San Isidro - Town Center', 'San Isidro', 'Leyte', 11.42400, 124.35200, true),
-  row('San Miguel - Town Center', 'San Miguel', 'Leyte', 11.26722, 124.83250),
-  row('Santa Fe - Town Center', 'Santa Fe', 'Leyte', 11.18500, 124.91600, true),
-  row('Tabango - Town Center', 'Tabango', 'Leyte', 11.30700, 124.37300, true),
-  row('Tabontabon - Town Center', 'Tabontabon', 'Leyte', 11.04083, 124.96111),
-  row('Tanauan - Town Center', 'Tanauan', 'Leyte', 11.10944, 125.01556),
-  row('Tolosa - Town Center', 'Tolosa', 'Leyte', 11.05900, 125.03600, true),
-  row('Tunga - Town Center', 'Tunga', 'Leyte', 11.24556, 124.75167),
-  row('Villaba - Town Center', 'Villaba', 'Leyte', 11.21300, 124.39300, true),
-  row('Tacloban City - City Center', 'Tacloban City', 'Tacloban City', 11.24333, 125.00472),
-];
+export const REGION_VIII = 'Eastern Visayas' as const;
+export const COORDINATE_SOURCE = 'PSGC Q1 2026 municipality/city hierarchy; HDX/OCHA November 2023 PSA/NAMRIA administrative boundaries; child-area-weighted centroid' as const;
+export type RegionVIIIProvince = 'Leyte' | 'Southern Leyte' | 'Biliran' | 'Samar' | 'Eastern Samar' | 'Northern Samar';
+export type CanonicalStop = { code: string; name: string; cityMunicipality: string; province: RegionVIIIProvince; region: typeof REGION_VIII; latitude: number; longitude: number; active: true; coordinateSource: typeof COORDINATE_SOURCE; };
+const row = (value: string): CanonicalStop => { const [code, name, cityMunicipality, province, latitude, longitude] = value.split('|'); return { code, name, cityMunicipality, province: province as RegionVIIIProvince, region: REGION_VIII, latitude: Number(latitude), longitude: Number(longitude), active: true, coordinateSource: COORDINATE_SOURCE }; };
+export const regionVIIICanonicalStops: CanonicalStop[] = `
+0807801000|ALMERIA BILIRAN|Almeria|Biliran|11.635065|124.404048
+0807802000|BILIRAN BILIRAN|Biliran|Biliran|11.504571|124.482934
+0807803000|CABUCGAYAN BILIRAN|Cabucgayan|Biliran|11.50472|124.561513
+0807804000|CAIBIRAN BILIRAN|Caibiran|Biliran|11.561943|124.551472
+0807805000|CULABA BILIRAN|Culaba|Biliran|11.636424|124.50926
+0807806000|KAWAYAN BILIRAN|Kawayan|Biliran|11.675898|124.424639
+0807807000|MARIPIPI BILIRAN|Maripipi|Biliran|11.789|124.323253
+0807808000|NAVAL BILIRAN|Naval|Biliran|11.56979|124.436584
+0802601000|ARTECHE EASTERN SAMAR|Arteche|Eastern Samar|12.247249|125.318202
+0802602000|BALANGIGA EASTERN SAMAR|Balangiga|Eastern Samar|11.197475|125.364106
+0802603000|BALANGKAYAN EASTERN SAMAR|Balangkayan|Eastern Samar|11.404232|125.395711
+0802604000|BORONGAN CITY EASTERN SAMAR|Borongan City|Eastern Samar|11.587941|125.335191
+0802605000|CAN-AVID EASTERN SAMAR|Can-Avid|Eastern Samar|11.968373|125.321231
+0802606000|DOLORES EASTERN SAMAR|Dolores|Eastern Samar|12.06521|125.332832
+0802607000|GENERAL MACARTHUR EASTERN SAMAR|General MacArthur|Eastern Samar|11.273927|125.475922
+0802608000|GIPORLOS EASTERN SAMAR|Giporlos|Eastern Samar|11.163237|125.450701
+0802609000|GUIUAN EASTERN SAMAR|Guiuan|Eastern Samar|10.853507|125.736611
+0802610000|HERNANI EASTERN SAMAR|Hernani|Eastern Samar|11.322674|125.589067
+0802611000|JIPAPAD EASTERN SAMAR|Jipapad|Eastern Samar|12.277435|125.212843
+0802612000|LAWAAN EASTERN SAMAR|Lawaan|Eastern Samar|11.197233|125.285698
+0802613000|LLORENTE EASTERN SAMAR|Llorente|Eastern Samar|11.351873|125.448928
+0802614000|MASLOG EASTERN SAMAR|Maslog|Eastern Samar|12.124223|125.196291
+0802615000|MAYDOLONG EASTERN SAMAR|Maydolong|Eastern Samar|11.464453|125.363024
+0802616000|MERCEDES EASTERN SAMAR|Mercedes|Eastern Samar|11.089729|125.704093
+0802617000|ORAS EASTERN SAMAR|Oras|Eastern Samar|12.1634|125.386316
+0802618000|QUINAPONDAN EASTERN SAMAR|Quinapondan|Eastern Samar|11.178274|125.506635
+0802619000|SALCEDO EASTERN SAMAR|Salcedo|Eastern Samar|11.158419|125.628648
+0802620000|SAN JULIAN EASTERN SAMAR|San Julian|Eastern Samar|11.732439|125.375776
+0802621000|SAN POLICARPO EASTERN SAMAR|San Policarpo|Eastern Samar|12.218458|125.452907
+0802622000|SULAT EASTERN SAMAR|Sulat|Eastern Samar|11.796295|125.37778
+0802623000|TAFT EASTERN SAMAR|Taft|Eastern Samar|11.872293|125.34347
+0803701000|ABUYOG LEYTE|Abuyog|Leyte|10.64369|125.050289
+0803702000|ALANGALANG LEYTE|Alangalang|Leyte|11.219893|124.863059
+0803703000|ALBUERA LEYTE|Albuera|Leyte|10.923629|124.714106
+0803705000|BABATNGON LEYTE|Babatngon|Leyte|11.386032|124.899825
+0803706000|BARUGO LEYTE|Barugo|Leyte|11.306137|124.769565
+0803707000|BATO LEYTE|Bato|Leyte|10.335179|124.849317
+0803708000|BAYBAY CITY LEYTE|Baybay City|Leyte|10.67543|124.835046
+0803710000|BURAUEN LEYTE|Burauen|Leyte|10.934669|124.83314
+0803713000|CALUBIAN LEYTE|Calubian|Leyte|11.478304|124.372142
+0803714000|CAPOOCAN LEYTE|Capoocan|Leyte|11.288408|124.58723
+0803715000|CARIGARA LEYTE|Carigara|Leyte|11.253514|124.699464
+0803717000|DAGAMI LEYTE|Dagami|Leyte|11.069467|124.876386
+0803718000|DULAG LEYTE|Dulag|Leyte|10.965361|125.003657
+0803719000|HILONGOS LEYTE|Hilongos|Leyte|10.415048|124.82043
+0803720000|HINDANG LEYTE|Hindang|Leyte|10.456936|124.762416
+0803721000|INOPACAN LEYTE|Inopacan|Leyte|10.514913|124.815032
+0803722000|ISABEL LEYTE|Isabel|Leyte|10.922457|124.456545
+0803723000|JARO LEYTE|Jaro|Leyte|11.159678|124.768414
+0803724000|JAVIER LEYTE|Javier|Leyte|10.747937|124.918155
+0803725000|JULITA LEYTE|Julita|Leyte|10.97061|124.958175
+0803726000|KANANGA LEYTE|Kananga|Leyte|11.182156|124.602208
+0803728000|LA PAZ LEYTE|La Paz|Leyte|10.88526|124.91652
+0803729000|LEYTE LEYTE|Leyte|Leyte|11.340877|124.498839
+0803730000|MACARTHUR LEYTE|MacArthur|Leyte|10.82542|124.93555
+0803731000|MAHAPLAG LEYTE|Mahaplag|Leyte|10.582329|124.963633
+0803733000|MATAG-OB LEYTE|Matag-ob|Leyte|11.136381|124.466514
+0803734000|MATALOM LEYTE|Matalom|Leyte|10.260347|124.826711
+0803735000|MAYORGA LEYTE|Mayorga|Leyte|10.882505|124.985552
+0803736000|MERIDA LEYTE|Merida|Leyte|10.957235|124.508486
+0803738000|ORMOC CITY LEYTE|Ormoc City|Leyte|11.054191|124.653866
+0803739000|PALO LEYTE|Palo|Leyte|11.158774|124.971811
+0803740000|PALOMPON LEYTE|Palompon|Leyte|11.028831|124.429401
+0803741000|PASTRANA LEYTE|Pastrana|Leyte|11.124077|124.888213
+0803742000|SAN ISIDRO LEYTE|San Isidro|Leyte|11.433109|124.352093
+0803743000|SAN MIGUEL LEYTE|San Miguel|Leyte|11.321433|124.843947
+0803744000|SANTA FE LEYTE|Santa Fe|Leyte|11.183057|124.926853
+0803745000|TABANGO LEYTE|Tabango|Leyte|11.319627|124.414808
+0803746000|TABONTABON LEYTE|Tabontabon|Leyte|11.037531|124.953637
+0831600000|TACLOBAN CITY LEYTE|Tacloban City|Leyte|11.271343|124.955364
+0803748000|TANAUAN LEYTE|Tanauan|Leyte|11.084017|124.990646
+0803749000|TOLOSA LEYTE|Tolosa|Leyte|11.03504|125.023932
+0803750000|TUNGA LEYTE|Tunga|Leyte|11.254357|124.759256
+0803751000|VILLABA LEYTE|Villaba|Leyte|11.213539|124.43939
+0804801000|ALLEN NORTHERN SAMAR|Allen|Northern Samar|12.51239|124.300629
+0804802000|BIRI NORTHERN SAMAR|Biri|Northern Samar|12.658545|124.390753
+0804803000|BOBON NORTHERN SAMAR|Bobon|Northern Samar|12.438611|124.529641
+0804804000|CAPUL NORTHERN SAMAR|Capul|Northern Samar|12.428129|124.162525
+0804805000|CATARMAN NORTHERN SAMAR|Catarman|Northern Samar|12.423765|124.624743
+0804806000|CATUBIG NORTHERN SAMAR|Catubig|Northern Samar|12.391079|125.092875
+0804807000|GAMAY NORTHERN SAMAR|Gamay|Northern Samar|12.387498|125.260549
+0804808000|LAOANG NORTHERN SAMAR|Laoang|Northern Samar|12.539015|125.026182
+0804809000|LAPINIG NORTHERN SAMAR|Lapinig|Northern Samar|12.312023|125.285728
+0804810000|LAS NAVAS NORTHERN SAMAR|Las Navas|Northern Samar|12.300543|125.02326
+0804811000|LAVEZARES NORTHERN SAMAR|Lavezares|Northern Samar|12.534584|124.359936
+0804824000|LOPE DE VEGA NORTHERN SAMAR|Lope de Vega|Northern Samar|12.313827|124.643953
+0804812000|MAPANAS NORTHERN SAMAR|Mapanas|Northern Samar|12.43962|125.209201
+0804813000|MONDRAGON NORTHERN SAMAR|Mondragon|Northern Samar|12.412298|124.772274
+0804814000|PALAPAG NORTHERN SAMAR|Palapag|Northern Samar|12.514347|125.144225
+0804815000|PAMBUJAN NORTHERN SAMAR|Pambujan|Northern Samar|12.458692|124.937215
+0804816000|ROSARIO NORTHERN SAMAR|Rosario|Northern Samar|12.509305|124.431024
+0804817000|SAN ANTONIO NORTHERN SAMAR|San Antonio|Northern Samar|12.410113|124.262959
+0804818000|SAN ISIDRO NORTHERN SAMAR|San Isidro|Northern Samar|12.349702|124.395211
+0804819000|SAN JOSE NORTHERN SAMAR|San Jose|Northern Samar|12.493273|124.485559
+0804820000|SAN ROQUE NORTHERN SAMAR|San Roque|Northern Samar|12.463036|124.870703
+0804821000|SAN VICENTE NORTHERN SAMAR|San Vicente|Northern Samar|12.339598|124.060869
+0804822000|SILVINO LOBOS NORTHERN SAMAR|Silvino Lobos|Northern Samar|12.281116|124.860344
+0804823000|VICTORIA NORTHERN SAMAR|Victoria|Northern Samar|12.431292|124.399621
+0806001000|ALMAGRO SAMAR|Almagro|Samar|11.927963|124.311392
+0806002000|BASEY SAMAR|Basey|Samar|11.390271|125.154613
+0806003000|CALBAYOG CITY SAMAR|Calbayog City|Samar|12.190922|124.586435
+0806004000|CALBIGA SAMAR|Calbiga|Samar|11.605184|125.081035
+0806005000|CATBALOGAN CITY SAMAR|Catbalogan City|Samar|11.838253|124.886931
+0806006000|DARAM SAMAR|Daram|Samar|11.629719|124.77968
+0806007000|GANDARA SAMAR|Gandara|Samar|12.069916|124.8198
+0806008000|HINABANGAN SAMAR|Hinabangan|Samar|11.720129|125.180763
+0806009000|JIABONG SAMAR|Jiabong|Samar|11.85108|124.972971
+0806010000|MARABUT SAMAR|Marabut|Samar|11.206386|125.217002
+0806011000|MATUGUINAO SAMAR|Matuguinao|Samar|12.193612|125.011563
+0806012000|MOTIONG SAMAR|Motiong|Samar|11.899141|125.011739
+0806026000|PAGSANGHAN SAMAR|Pagsanghan|Samar|11.964062|124.753898
+0806022000|PARANAS SAMAR|Paranas|Samar|11.874194|125.126969
+0806013000|PINABACDAO SAMAR|Pinabacdao|Samar|11.544794|125.04924
+0806025000|SAN JORGE SAMAR|San Jorge|Samar|11.982847|124.902727
+0806014000|SAN JOSE DE BUAN SAMAR|San Jose de Buan|Samar|12.069952|125.056976
+0806015000|SAN SEBASTIAN SAMAR|San Sebastian|Samar|11.696935|125.028141
+0806016000|SANTA MARGARITA SAMAR|Santa Margarita|Samar|12.057517|124.712468
+0806017000|SANTA RITA SAMAR|Santa Rita|Samar|11.433617|125.004228
+0806018000|SANTO NIÑO SAMAR|Santo Niño|Samar|11.926097|124.434813
+0806024000|TAGAPUL-AN SAMAR|Tagapul-an|Samar|12.062085|124.190083
+0806019000|TALALORA SAMAR|Talalora|Samar|11.508957|124.847835
+0806020000|TARANGNAN SAMAR|Tarangnan|Samar|11.908705|124.785712
+0806021000|VILLAREAL SAMAR|Villareal|Samar|11.538917|124.943462
+0806023000|ZUMARRAGA SAMAR|Zumarraga|Samar|11.660577|124.856731
+0806401000|ANAHAWAN SOUTHERN LEYTE|Anahawan|Southern Leyte|10.289408|125.233135
+0806402000|BONTOC SOUTHERN LEYTE|Bontoc|Southern Leyte|10.382266|124.919534
+0806403000|HINUNANGAN SOUTHERN LEYTE|Hinunangan|Southern Leyte|10.384657|125.157477
+0806404000|HINUNDAYAN SOUTHERN LEYTE|Hinundayan|Southern Leyte|10.34515|125.238834
+0806405000|LIBAGON SOUTHERN LEYTE|Libagon|Southern Leyte|10.329032|125.068379
+0806406000|LILOAN SOUTHERN LEYTE|Liloan|Southern Leyte|10.13309|125.161718
+0806419000|LIMASAWA SOUTHERN LEYTE|Limasawa|Southern Leyte|9.930539|125.071523
+0806407000|MAASIN CITY SOUTHERN LEYTE|Maasin City|Southern Leyte|10.183459|124.861738
+0806408000|MACROHON SOUTHERN LEYTE|Macrohon|Southern Leyte|10.091022|124.950795
+0806409000|MALITBOG SOUTHERN LEYTE|Malitbog|Southern Leyte|10.166058|124.968573
+0806410000|PADRE BURGOS SOUTHERN LEYTE|Padre Burgos|Southern Leyte|10.068155|125.007458
+0806411000|PINTUYAN SOUTHERN LEYTE|Pintuyan|Southern Leyte|9.975077|125.2413
+0806412000|SAINT BERNARD SOUTHERN LEYTE|Saint Bernard|Southern Leyte|10.317265|125.11671
+0806413000|SAN FRANCISCO SOUTHERN LEYTE|San Francisco|Southern Leyte|10.068829|125.169164
+0806414000|SAN JUAN SOUTHERN LEYTE|San Juan|Southern Leyte|10.272337|125.190578
+0806415000|SAN RICARDO SOUTHERN LEYTE|San Ricardo|Southern Leyte|9.989806|125.259235
+0806416000|SILAGO SOUTHERN LEYTE|Silago|Southern Leyte|10.513989|125.128186
+0806417000|SOGOD SOUTHERN LEYTE|Sogod|Southern Leyte|10.448494|124.995474
+0806418000|TOMAS OPPUS SOUTHERN LEYTE|Tomas Oppus|Southern Leyte|10.274857|124.952637
+`.trim().split('\n').map(row);
+// Backwards-compatible export for existing importer consumers.
+export const leyteCanonicalStops = regionVIIICanonicalStops;

@@ -8,6 +8,7 @@
     "start": "node dist/src/main.js",
     "test": "jest --runInBand",
     "prisma": "prisma",
+    "import:region-viii-stops": "tsx scripts/import-leyte-stops.ts",
     "import:leyte-stops": "tsx scripts/import-leyte-stops.ts"
   },
   "prisma": { "seed": "tsx prisma/seed.ts" },
