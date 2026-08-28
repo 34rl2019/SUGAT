@@ -15,6 +15,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     version: '0.1.0',
     orientation: 'portrait',
     userInterfaceStyle: 'light',
+    icon: './assets/sugat-logo-official.png',
+    splash: { image: './assets/sugat-logo-official.png', backgroundColor: '#FFFFFF', resizeMode: 'contain' },
     scheme: 'sugat-driver',
     ios: iosBundleIdentifier ? {
       bundleIdentifier: iosBundleIdentifier,
@@ -27,6 +29,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     } : undefined,
     android: {
       package: androidPackage,
+      adaptiveIcon: { foregroundImage: './assets/sugat-logo-official.png', backgroundColor: '#FFFFFF' },
       // expo-location adds location and foreground-service permissions.
       permissions: ['POST_NOTIFICATIONS'],
     },

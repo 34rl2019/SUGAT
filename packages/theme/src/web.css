@@ -1,0 +1,2 @@
+:root{--sugat-gold:#FFB300;--sugat-navy:#0D1B2A;--sugat-white:#FFFFFF;--sugat-background:#F7F8FA;--sugat-surface:#FFFFFF;--sugat-muted-surface:#F1F3F5;--sugat-text:#0D1B2A;--sugat-text-secondary:#667085;--sugat-text-muted:#98A2B3;--sugat-border:#E4E7EC;--sugat-border-strong:#D0D5DD;--sugat-success:#16875D;--sugat-danger:#D92D20;--sugat-info:#2563EB;--sugat-radius:12px;--sugat-radius-lg:18px;--sugat-shadow:0 8px 24px rgba(13,27,42,.08);--sugat-shadow-hero:0 18px 50px rgba(13,27,42,.22)}
+:focus-visible{outline:3px solid var(--sugat-gold);outline-offset:2px}
