@@ -1,0 +1,3 @@
+import type { Freshness, Stop, VehicleType } from '@sugat/shared-types';
+export type SearchResult={tripId:string;vehicle:{type:VehicleType;displayName:string;bodyNumber?:string};route:{name:string;direction:string};boardingStop:Stop;destinationStop:Stop;nextStop:Stop|null;distanceKm:number;eta:{display:string};freshness:Freshness;lastUpdatedAt:string};
+export type TripDetail={id:string;status:string;vehicle:{type:VehicleType;displayName:string;bodyNumber?:string;plateNumber:string};route:{id:string;name:string;direction:string;stops:{sequence:number;stop:Stop}[]};nextStop:Stop|null;location:{latitude:number;longitude:number;speed?:number;heading?:number;recordedAt:string;freshness:Freshness}|null};
