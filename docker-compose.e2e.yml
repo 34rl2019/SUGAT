@@ -1,0 +1,47 @@
+name: sugat_e2e_local
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: sugat-e2e-postgres
+    environment:
+      POSTGRES_USER: ${SUGAT_E2E_POSTGRES_USER:?Set SUGAT_E2E_POSTGRES_USER in .env.e2e.local}
+      POSTGRES_PASSWORD: ${SUGAT_E2E_POSTGRES_PASSWORD:?Set SUGAT_E2E_POSTGRES_PASSWORD in .env.e2e.local}
+      POSTGRES_DB: sugat_e2e_test
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - sugat_e2e_postgres_data:/var/lib/postgresql/data
+    networks:
+      - sugat_e2e_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d sugat_e2e_test"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: "no"
+
+  redis:
+    image: redis:7-alpine
+    container_name: sugat-e2e-redis
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "127.0.0.1:56379:6379"
+    tmpfs:
+      - /data
+    networks:
+      - sugat_e2e_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: "no"
+
+networks:
+  sugat_e2e_network:
+    name: sugat_e2e_network
+
+volumes:
+  sugat_e2e_postgres_data:
+    name: sugat_e2e_postgres_data
