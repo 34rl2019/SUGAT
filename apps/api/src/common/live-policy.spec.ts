@@ -1,2 +1,2 @@
-import { locationFreshness } from './live-policy';
-describe('location freshness',()=>{it('distinguishes fresh and unavailable GPS',()=>{expect(locationFreshness(new Date())).toBe('LIVE');expect(locationFreshness(new Date(Date.now()-700_000))).toBe('OFFLINE');});});
+import { livePolicy, locationFreshness } from './live-policy';
+describe('location freshness',()=>{const now=1_800_000_000_000;it('moves deterministically through LIVE, STALE, and OFFLINE',()=>{expect(locationFreshness(new Date(now),now)).toBe('LIVE');expect(locationFreshness(new Date(now-livePolicy.liveAfterSeconds*1_000-1),now)).toBe('STALE');expect(locationFreshness(new Date(now-livePolicy.offlineAfterSeconds*1_000-1),now)).toBe('OFFLINE');});it('returns to LIVE for a new fresh timestamp after an old location was OFFLINE',()=>{expect(locationFreshness(new Date(now-700_000),now)).toBe('OFFLINE');expect(locationFreshness(new Date(now-1_000),now)).toBe('LIVE');});});

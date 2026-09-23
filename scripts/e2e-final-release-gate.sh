@@ -68,7 +68,7 @@ for (const [key, expectedPort] of [['DATABASE_URL', '55432'], ['REDIS_URL', '563
     throw new Error(`${key} must target isolated localhost port ${expectedPort}`);
   }
 }
-if (process.env.NODE_ENV === 'production') throw new Error('NODE_ENV must not be production');
+if (process.env.NODE_ENV !== 'test') throw new Error('NODE_ENV must be exactly test');
 NODE
 
 corepack pnpm --filter @sugat/api prisma migrate deploy
@@ -119,10 +119,17 @@ let r = {};
 try { r = JSON.parse(fs.readFileSync(file, 'utf8')); } catch {}
 const gates = [
   ['VALID GPS', 'validGps'], ['GPS QUARANTINE', 'gpsQuarantine'],
+  ['DUPLICATE GPS', 'duplicateGps'], ['OUT-OF-ORDER GPS', 'outOfOrderGps'],
+  ['OFFLINE BATCH', 'offlineBatch'], ['STOP PROGRESSION', 'stopProgression'],
   ['PASSENGER REALTIME', 'passengerRealtime'], ['ADMIN REALTIME', 'adminRealtime'],
+  ['REALTIME AUTHORIZATION', 'realtimeSecurity'],
+  ['TRIP LIFECYCLE', 'tripLifecycle'],
   ['RECONNECT', 'reconnect'], ['REDIS RUNTIME OUTAGE', 'redisOutage'],
   ['CONCURRENT COMPLETION', 'concurrentCompletion'], ['PASSENGER E2E', 'passengerE2e'],
   ['ADMIN E2E', 'adminE2e'],
+  ['SPRINT 01 SECURITY', 'securityE2e'],
+  ['AUTONOMOUS PILOT OPERATIONS', 'pilotOperations'], ['MULTI-VEHICLE OVERVIEW', 'pilotOverview'],
+  ['DRIVER DEVICE RESET', 'pilotDeviceReset'],
 ];
 const allRuntime = runtimeExit === '0' && gates.every(([, key]) => r[key] === 'PASS');
 const ready = allRuntime && source === 'PASS';

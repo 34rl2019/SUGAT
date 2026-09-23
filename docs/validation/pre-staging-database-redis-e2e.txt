@@ -1,0 +1,11 @@
+API survived outage: YES
+PostgreSQL persistence during outage: YES
+Passenger HTTP state available: YES
+Admin HTTP state available: YES
+Redis recovered without API restart: YES
+Passenger realtime recovered: YES
+Admin realtime recovered: YES
+Run | Winner | Loser Response | Final DB State | Completion Events
+1 | request 1 | HTTP 409 TRIP_NOT_ACTIVE | COMPLETED | 1
+2 | request 1 | HTTP 409 TRIP_NOT_ACTIVE | COMPLETED | 1
+3 | request 1 | HTTP 409 TRIP_NOT_ACTIVE | COMPLETED | 1

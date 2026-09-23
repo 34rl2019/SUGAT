@@ -6,4 +6,4 @@ export const livePolicy = {
   arrivedStopMeters: Number(process.env.ARRIVED_STOP_METERS ?? 150),
 };
 export type Freshness = 'LIVE'|'STALE'|'OFFLINE';
-export function locationFreshness(at:Date):Freshness { const age=(Date.now()-at.getTime())/1000; if(age<=livePolicy.liveAfterSeconds)return'LIVE'; if(age<=livePolicy.offlineAfterSeconds)return'STALE'; return'OFFLINE'; }
+export function locationFreshness(at:Date,now=Date.now()):Freshness { const age=(now-at.getTime())/1000; if(age<=livePolicy.liveAfterSeconds)return'LIVE'; if(age<=livePolicy.offlineAfterSeconds)return'STALE'; return'OFFLINE'; }

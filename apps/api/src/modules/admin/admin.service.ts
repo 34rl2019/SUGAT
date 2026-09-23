@@ -1,3 +1,4 @@
+import { operatingTrip, startedSegmentEvents } from '../../common/trip-route-stops';
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { AccountStatus, Prisma, Role, TripStatus } from '@prisma/client';
 import argon2 from 'argon2';
@@ -5,13 +6,38 @@ import { PrismaService } from '../../common/prisma.service';
 import { livePolicy, locationFreshness } from '../../common/live-policy';
 import { duplicateEmailConflict, isPrismaUniqueConstraintError, normalizeEmail } from '../../common/user-email';
 import { DriverComplianceService } from '../../common/driver-compliance.service';
+import { TripLifecycleService } from '../../common/trip-lifecycle.service';
 
 const blockingTripStatuses: TripStatus[] = ['READY', 'ACTIVE'];
 
 @Injectable()
 export class AdminService {
-  constructor(private db: PrismaService, private compliance: DriverComplianceService) {}
+  constructor(private db: PrismaService, private compliance: DriverComplianceService, private lifecycle: TripLifecycleService) {}
   private audit(actorId: string, action: string, entityType: string, entityId: string) { return this.db.auditLog.create({ data: { actorId, action, entityType, entityId } }); }
+
+  async authorizeRoutes(actorId: string, driverId: string, routeIds: string[]) {
+    return this.db.$transaction(async tx => {
+      if (!await tx.driver.findUnique({ where: { id: driverId } })) throw new NotFoundException('Driver not found');
+      if (await tx.route.count({ where: { id: { in: routeIds }, active: true } }) !== routeIds.length) throw new BadRequestException('Choose valid active routes.');
+      const active = await tx.trip.findFirst({ where: { driverId, status: 'ACTIVE' } });
+      if (active && !routeIds.includes(active.routeId)) throw new ConflictException('End the active trip before removing its route authorization.');
+      await tx.driverRouteAuthorization.deleteMany({ where: { driverId } });
+      if (routeIds.length) await tx.driverRouteAuthorization.createMany({ data: routeIds.map(routeId => ({ driverId, routeId })) });
+      await tx.auditLog.create({ data: { actorId, action: 'driver.routes.authorized', entityType: 'Driver', entityId: driverId, metadata: { routeIds } } });
+      return { routeIds };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  }
+
+  async resetDevice(actorId: string, driverId: string) {
+    return this.db.$transaction(async tx => {
+      const driver = await tx.driver.findUnique({ where: { id: driverId } });
+      if (!driver) throw new NotFoundException('Driver not found');
+      await tx.driverDevice.deleteMany({ where: { driverId } });
+      await tx.refreshSession.updateMany({ where: { userId: driver.userId, revokedAt: null }, data: { revokedAt: new Date() } });
+      await tx.auditLog.create({ data: { actorId, action: 'driver.device.reset', entityType: 'Driver', entityId: driverId } });
+      return { success: true };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  }
 
   async dashboard() {
     const day = new Date(); day.setHours(0, 0, 0, 0);
@@ -31,14 +57,14 @@ export class AdminService {
     return { activeTrips, activeBuses, activeVans, driversOnActiveTrips: activeTrips, gpsStale, completedToday, licensesExpiringWithin30Days, licensesExpiringWithin7Days, expiredLicenses, driversPendingVerification };
   }
 
-  async drivers() { const drivers = await this.db.driver.findMany({ include: { user: { select: { email: true, phone: true, accountStatus: true } }, vehicles: true }, orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }] }); return drivers.map(driver => ({ ...driver, compliance: this.compliance.evaluate(driver) })); }
+  async drivers() { const drivers = await this.db.driver.findMany({ include: { user: { select: { email: true, phone: true, accountStatus: true } }, vehicles: true, authorizedRoutes: { select: { route: { select: { id: true, name: true, direction: true, active: true } } } }, authorizedDevice: { select: { authorizedAt: true } } }, orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }] }); return drivers.map(driver => ({ ...driver, compliance: this.compliance.evaluate(driver) })); }
   async createDriver(actorId: string, dto: any) {
     const { email, password, phone, licenseExpiresAt, ...driver } = dto;
     const normalizedEmail = normalizeEmail(email);
     if (await this.db.user.findUnique({ where: { email: normalizedEmail }, select: { id: true } })) throw duplicateEmailConflict();
     let created;
     try {
-      created = await this.db.user.create({ data: { email: normalizedEmail, phone: phone || null, passwordHash: await argon2.hash(password), role: Role.DRIVER, driver: { create: { ...driver, licenseExpiresAt: licenseExpiresAt ? new Date(licenseExpiresAt) : null } } }, include: { driver: true } });
+      created = await this.db.user.create({ data: { email: normalizedEmail, phone: phone || null, passwordHash: await argon2.hash(password), mustChangePassword: true, role: Role.DRIVER, driver: { create: { ...driver, licenseExpiresAt: licenseExpiresAt ? new Date(licenseExpiresAt) : null } } }, include: { driver: true } });
     } catch (error) {
       if (isPrismaUniqueConstraintError(error, 'email')) throw duplicateEmailConflict();
       if (isPrismaUniqueConstraintError(error)) throw new ConflictException('A user with these account details already exists.');
@@ -57,7 +83,7 @@ export class AdminService {
       user.email = normalizedEmail;
     }
     if (phone !== undefined) user.phone = phone || null;
-    if (password) user.passwordHash = await argon2.hash(password); if (accountStatus !== undefined) user.accountStatus = accountStatus;
+    if (password) { user.passwordHash = await argon2.hash(password); user.mustChangePassword = true; } if (accountStatus !== undefined) user.accountStatus = accountStatus;
     let updated;
     try {
       const nextExpiry=licenseExpiresAt===undefined?existingDriver.licenseExpiresAt:licenseExpiresAt?new Date(licenseExpiresAt):null;
@@ -69,6 +95,7 @@ export class AdminService {
       if (isPrismaUniqueConstraintError(error)) throw new ConflictException('A user with these account details already exists.');
       throw error;
     }
+    if (password) await this.db.refreshSession.updateMany({ where: { userId: existingDriver.userId, revokedAt: null }, data: { revokedAt: new Date() } });
     await this.audit(actorId, 'driver.updated', 'Driver', id); return updated;
   }
   async driverStatus(actorId: string, id: string, active: boolean) {
@@ -109,25 +136,19 @@ export class AdminService {
   }
   async routeStatus(actorId: string, id: string, active: boolean) { if (!active && await this.db.trip.findFirst({ where: { routeId: id, status: { in: blockingTripStatuses } } })) throw new ConflictException('Cancel or complete ready/active trips before deactivating this route'); const route = await this.db.route.update({ where: { id }, data: { active } }); await this.audit(actorId, 'route.status.changed', 'Route', id); return route; }
 
-  schedules() { return this.db.schedule.findMany({ include: { route: true, driver: true, vehicle: true, trip: true }, orderBy: { departureAt: 'desc' }, take: 250 }); }
-  async createSchedule(actorId: string, dto: any) {
-    const departureAt = new Date(dto.departureAt); if (Number.isNaN(departureAt.getTime())) throw new BadRequestException('Invalid departure date');
-    const from = new Date(departureAt.getTime() - 4 * 3_600_000), to = new Date(departureAt.getTime() + 4 * 3_600_000);
-    const [route, driver, vehicle, conflict] = await Promise.all([
-      this.db.route.findFirst({ where: { id: dto.routeId, active: true } }), this.db.driver.findFirst({ where: { id: dto.driverId, active: true, user: { accountStatus: 'ACTIVE' } } }),
-      this.db.vehicle.findFirst({ where: { id: dto.vehicleId, active: true, assignedDriverId: dto.driverId } }), this.db.schedule.findFirst({ where: { active: true, departureAt: { gte: from, lte: to }, OR: [{ driverId: dto.driverId }, { vehicleId: dto.vehicleId }] } }),
-    ]);
-    if (!route) throw new BadRequestException('An active route is required'); if (!driver) throw new BadRequestException('An active driver is required'); if (!vehicle) throw new BadRequestException('Select an active vehicle assigned to this driver'); if (conflict) throw new ConflictException('Driver or vehicle has an overlapping assignment within four hours');
-    const schedule = await this.db.schedule.create({ data: { ...dto, departureAt, trip: { create: { routeId: dto.routeId, driverId: dto.driverId, vehicleId: dto.vehicleId, scheduledDepartureAt: departureAt, status: 'READY' } } }, include: { trip: true } }); await this.audit(actorId, 'schedule.created', 'Schedule', schedule.id); return schedule;
-  }
+  async schedules() { await this.lifecycle.reconcile(); return this.db.schedule.findMany({ include: { route: true, driver: true, vehicle: true, trip: true }, orderBy: { departureAt: 'desc' }, take: 250 }); }
   async cancelSchedule(actorId: string, id: string) {
     const schedule = await this.db.schedule.findUnique({ where: { id }, include: { trip: true } }); if (!schedule) throw new NotFoundException('Schedule not found');
     if (!schedule.active || !schedule.trip || !['SCHEDULED', 'READY'].includes(schedule.trip.status)) throw new ConflictException('Only an active unstarted schedule can be cancelled');
-    const cancelled = await this.db.$transaction(async transaction => { await transaction.trip.update({ where: { id: schedule.trip!.id }, data: { status: 'CANCELLED', endedAt: new Date() } }); return transaction.schedule.update({ where: { id }, data: { active: false }, include: { trip: true, route: true, driver: true, vehicle: true } }); }); await this.audit(actorId, 'schedule.cancelled', 'Schedule', id); return cancelled;
+    const now=this.lifecycle.now();
+    try {
+      const cancelled = await this.db.$transaction(async transaction => { const changed=await transaction.trip.updateMany({where:{id:schedule.trip!.id,status:{in:['SCHEDULED','READY']}},data:{status:'CANCELLED',endedAt:now}});if(changed.count!==1)throw new ConflictException('Only an active unstarted schedule can be cancelled');await transaction.tripEvent.create({data:{tripId:schedule.trip!.id,type:'CANCELLED',metadata:{reason:'ADMIN_CANCELLED'}}});return transaction.schedule.update({ where: { id, active:true }, data: { active: false }, include: { trip: true, route: true, driver: true, vehicle: true } }); },{isolationLevel:Prisma.TransactionIsolationLevel.Serializable});
+      await this.audit(actorId, 'schedule.cancelled', 'Schedule', id); return cancelled;
+    } catch(error) { if(error instanceof ConflictException)throw error;if(error instanceof Prisma.PrismaClientKnownRequestError&&error.code==='P2034')throw new ConflictException('Trip state changed while cancellation was processing');throw error; }
   }
 
   async live() {
-    const trips = await this.db.trip.findMany({ where: { status: 'ACTIVE' }, include: { currentLocation: true, vehicle: true, driver: { include: { user: true } }, route: { include: { stops: { include: { stop: true }, orderBy: { sequence: 'asc' } } } } }, orderBy: { startedAt: 'desc' } });
-    return trips.map(trip => { const compliance = this.compliance.evaluate(trip.driver); return { ...trip, complianceAlert: compliance.eligible ? null : compliance, gpsStatus: trip.currentLocation ? locationFreshness(trip.currentLocation.recordedAt) : 'OFFLINE', nextStop: trip.route.stops.find(stop => stop.sequence > trip.lastPassedSequence)?.stop ?? null }; });
+    const trips = await this.db.trip.findMany({ where: { status: 'ACTIVE' }, include: { events: startedSegmentEvents, currentLocation: true, vehicle: true, driver: { include: { user: { select: { id: true, email: true, phone: true, role: true, accountStatus: true } } } }, route: { include: { stops: { include: { stop: true }, orderBy: { sequence: 'asc' } } } } }, orderBy: { startedAt: 'desc' } });
+    return trips.map(operatingTrip).map(trip => { const compliance = this.compliance.evaluate(trip.driver); return { ...trip, complianceAlert: compliance.eligible ? null : compliance, gpsStatus: trip.currentLocation ? locationFreshness(trip.currentLocation.recordedAt) : 'OFFLINE', nextStop: trip.route.stops.find(stop => stop.sequence > trip.lastPassedSequence)?.stop ?? null }; });
   }
 }

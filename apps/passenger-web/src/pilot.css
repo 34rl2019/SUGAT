@@ -1,0 +1,8 @@
+.geographic-map{height:clamp(300px,52vh,520px);width:100%;border:1px solid #d0d5dd;border-radius:14px;overflow:hidden;background:#f2f4f7}
+.vehicle-map-marker{color:white;padding:7px 10px;border:2px solid white;border-radius:10px;font-size:11px;font-weight:700;white-space:pre-line;box-shadow:0 2px 7px #0004;cursor:pointer;min-height:44px;max-width:180px}
+.map-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px}.map-note{font-size:13px;color:#475467}
+.occupancy-status{display:inline-block;color:white;padding:5px 9px;border-radius:6px;font-size:12px;font-weight:700}
+.vehicle-identity{display:grid;gap:8px;padding:18px;background:white;border:1px solid #d0d5dd;border-radius:12px;margin:16px 0}
+.verification-notice{padding:14px;border-left:4px solid #c6a34a;background:#f8f5ec;color:#142c46;font-size:13px;line-height:1.6}
+.overview{margin-top:24px}.results article>div:nth-child(2){min-width:0;flex:1}.results article h3{overflow-wrap:anywhere}
+@media(max-width:600px){.results article{flex-wrap:wrap}.results article button{width:100%}.track{padding:24px 0}.track h1{font-size:28px}.search{margin:12px 0}.hero{min-height:0;padding:24px;margin-top:12px}.hero:after{display:none}.hero h1{font-size:30px}.hero:before{display:none}}

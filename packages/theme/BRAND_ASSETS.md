@@ -1,6 +1,6 @@
 # Official SUGAT assets
 
-The supplied authoritative raster is stored at `packages/theme/assets/sugat-logo-official.png` and copied unchanged into each client that consumes it. Preserve its aspect ratio and do not recolor or redraw it.
+The supplied authoritative raster is stored at `packages/theme/assets/sugat-logo-official.png`. It is retained for provenance but is not rendered by current clients because it lacks a production-ready transparent background. Current interfaces use text branding until an approved transparent PNG or SVG is supplied.
 
 For final store production, request these approved source exports from the brand owner:
 

@@ -1,0 +1,6 @@
+Database default session timezone: America/Los_Angeles
+PASS America/Los_Angeles: unguarded session rejected; five independent API pool connections and reconnect forced UTC
+PASS Asia/Manila: unguarded session rejected; five independent API pool connections and reconnect forced UTC
+PASS GPS recordedAt, receivedAt, updatedAt, lastLocationAt, event time, offset normalization, realtime/public ISO, LIVE ETA and freshness aging
+PASS offline batch ordering, monotonic promotion, duplicate/stale/future handling and rejected-event receipt time
+PASS guard detects deliberate session drift

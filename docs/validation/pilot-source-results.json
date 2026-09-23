@@ -1,0 +1,344 @@
+[
+  {
+    "label": "Prisma generate",
+    "file": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node-v22.14.0-win-x64\\node.exe",
+    "args": [
+      "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node_modules\\pnpm\\bin\\pnpm.cjs",
+      "--filter",
+      "@sugat/api",
+      "prisma",
+      "generate"
+    ],
+    "cwd": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-validation",
+    "startedAt": "2026-09-18T14:03:51.650Z",
+    "finishedAt": "2026-09-18T14:03:55.663Z",
+    "exitCode": 0,
+    "error": null,
+    "log": "prisma-generate.log"
+  },
+  {
+    "label": "Prisma validate",
+    "file": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node-v22.14.0-win-x64\\node.exe",
+    "args": [
+      "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node_modules\\pnpm\\bin\\pnpm.cjs",
+      "--filter",
+      "@sugat/api",
+      "prisma",
+      "validate"
+    ],
+    "cwd": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-validation",
+    "startedAt": "2026-09-18T14:03:55.671Z",
+    "finishedAt": "2026-09-18T14:03:59.407Z",
+    "exitCode": 0,
+    "error": null,
+    "log": "prisma-validate.log"
+  },
+  {
+    "label": "API unit tests",
+    "file": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node-v22.14.0-win-x64\\node.exe",
+    "args": [
+      "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node_modules\\pnpm\\bin\\pnpm.cjs",
+      "--filter",
+      "@sugat/api",
+      "test"
+    ],
+    "cwd": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-validation",
+    "startedAt": "2026-09-18T14:03:59.416Z",
+    "finishedAt": "2026-09-18T14:04:14.973Z",
+    "exitCode": 1,
+    "error": null,
+    "log": "api-unit-tests.log"
+  },
+  {
+    "label": "API build",
+    "file": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node-v22.14.0-win-x64\\node.exe",
+    "args": [
+      "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node_modules\\pnpm\\bin\\pnpm.cjs",
+      "--filter",
+      "@sugat/api",
+      "build"
+    ],
+    "cwd": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-validation",
+    "startedAt": "2026-09-18T14:04:14.981Z",
+    "finishedAt": "2026-09-18T14:04:24.607Z",
+    "exitCode": 0,
+    "error": null,
+    "log": "api-build.log"
+  },
+  {
+    "label": "Passenger Web tests",
+    "file": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node-v22.14.0-win-x64\\node.exe",
+    "args": [
+      "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node_modules\\pnpm\\bin\\pnpm.cjs",
+      "--filter",
+      "@sugat/passenger-web",
+      "test"
+    ],
+    "cwd": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-validation",
+    "startedAt": "2026-09-18T14:04:24.622Z",
+    "finishedAt": "2026-09-18T14:04:27.354Z",
+    "exitCode": 0,
+    "error": null,
+    "log": "passenger-web-tests.log"
+  },
+  {
+    "label": "Admin Web tests",
+    "file": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node-v22.14.0-win-x64\\node.exe",
+    "args": [
+      "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node_modules\\pnpm\\bin\\pnpm.cjs",
+      "--filter",
+      "@sugat/admin-web",
+      "test"
+    ],
+    "cwd": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-validation",
+    "startedAt": "2026-09-18T14:04:27.364Z",
+    "finishedAt": "2026-09-18T14:04:29.900Z",
+    "exitCode": 0,
+    "error": null,
+    "log": "admin-web-tests.log"
+  },
+  {
+    "label": "Driver queue and lifecycle tests",
+    "file": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node-v22.14.0-win-x64\\node.exe",
+    "args": [
+      "--test",
+      "apps/driver-mobile/src/location/queue-policy.test.mjs",
+      "apps/driver-mobile/src/location/tracking-lifecycle.test.mjs"
+    ],
+    "cwd": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-validation",
+    "startedAt": "2026-09-18T14:04:29.908Z",
+    "finishedAt": "2026-09-18T14:04:30.208Z",
+    "exitCode": 0,
+    "error": null,
+    "log": "driver-queue-and-lifecycle-tests.log"
+  },
+  {
+    "label": "passenger-web typecheck",
+    "file": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node-v22.14.0-win-x64\\node.exe",
+    "args": [
+      "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node_modules\\pnpm\\bin\\pnpm.cjs",
+      "--filter",
+      "@sugat/passenger-web",
+      "exec",
+      "tsc",
+      "--noEmit"
+    ],
+    "cwd": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-validation",
+    "startedAt": "2026-09-18T14:04:30.218Z",
+    "finishedAt": "2026-09-18T14:04:34.333Z",
+    "exitCode": 0,
+    "error": null,
+    "log": "passenger-web-typecheck.log"
+  },
+  {
+    "label": "admin-web typecheck",
+    "file": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node-v22.14.0-win-x64\\node.exe",
+    "args": [
+      "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node_modules\\pnpm\\bin\\pnpm.cjs",
+      "--filter",
+      "@sugat/admin-web",
+      "exec",
+      "tsc",
+      "--noEmit"
+    ],
+    "cwd": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-validation",
+    "startedAt": "2026-09-18T14:04:34.347Z",
+    "finishedAt": "2026-09-18T14:04:38.613Z",
+    "exitCode": 0,
+    "error": null,
+    "log": "admin-web-typecheck.log"
+  },
+  {
+    "label": "passenger-mobile typecheck",
+    "file": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node-v22.14.0-win-x64\\node.exe",
+    "args": [
+      "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node_modules\\pnpm\\bin\\pnpm.cjs",
+      "--filter",
+      "@sugat/passenger-mobile",
+      "typecheck"
+    ],
+    "cwd": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-validation",
+    "startedAt": "2026-09-18T14:04:38.634Z",
+    "finishedAt": "2026-09-18T14:04:42.424Z",
+    "exitCode": 0,
+    "error": null,
+    "log": "passenger-mobile-typecheck.log"
+  },
+  {
+    "label": "driver-mobile typecheck",
+    "file": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node-v22.14.0-win-x64\\node.exe",
+    "args": [
+      "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node_modules\\pnpm\\bin\\pnpm.cjs",
+      "--filter",
+      "@sugat/driver-mobile",
+      "typecheck"
+    ],
+    "cwd": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-validation",
+    "startedAt": "2026-09-18T14:04:42.432Z",
+    "finishedAt": "2026-09-18T14:04:46.044Z",
+    "exitCode": 0,
+    "error": null,
+    "log": "driver-mobile-typecheck.log"
+  },
+  {
+    "label": "admin-mobile typecheck",
+    "file": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node-v22.14.0-win-x64\\node.exe",
+    "args": [
+      "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node_modules\\pnpm\\bin\\pnpm.cjs",
+      "--filter",
+      "@sugat/admin-mobile",
+      "typecheck"
+    ],
+    "cwd": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-validation",
+    "startedAt": "2026-09-18T14:04:46.054Z",
+    "finishedAt": "2026-09-18T14:04:49.564Z",
+    "exitCode": 0,
+    "error": null,
+    "log": "admin-mobile-typecheck.log"
+  },
+  {
+    "label": "passenger-web build",
+    "file": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node-v22.14.0-win-x64\\node.exe",
+    "args": [
+      "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node_modules\\pnpm\\bin\\pnpm.cjs",
+      "--filter",
+      "@sugat/passenger-web",
+      "build"
+    ],
+    "cwd": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-validation",
+    "startedAt": "2026-09-18T14:04:49.571Z",
+    "finishedAt": "2026-09-18T14:05:01.459Z",
+    "exitCode": 0,
+    "error": null,
+    "log": "passenger-web-build.log"
+  },
+  {
+    "label": "admin-web build",
+    "file": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node-v22.14.0-win-x64\\node.exe",
+    "args": [
+      "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node_modules\\pnpm\\bin\\pnpm.cjs",
+      "--filter",
+      "@sugat/admin-web",
+      "build"
+    ],
+    "cwd": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-validation",
+    "startedAt": "2026-09-18T14:05:01.470Z",
+    "finishedAt": "2026-09-18T14:05:08.249Z",
+    "exitCode": 0,
+    "error": null,
+    "log": "admin-web-build.log"
+  },
+  {
+    "label": "passenger-mobile Android export",
+    "file": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node-v22.14.0-win-x64\\node.exe",
+    "args": [
+      "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node_modules\\pnpm\\bin\\pnpm.cjs",
+      "--filter",
+      "@sugat/passenger-mobile",
+      "exec",
+      "expo",
+      "export",
+      "--platform",
+      "android",
+      "--max-workers",
+      "2"
+    ],
+    "cwd": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-validation",
+    "startedAt": "2026-09-18T14:05:08.274Z",
+    "finishedAt": "2026-09-18T14:05:20.506Z",
+    "exitCode": 0,
+    "error": null,
+    "log": "passenger-mobile-android-export.log"
+  },
+  {
+    "label": "driver-mobile Android export",
+    "file": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node-v22.14.0-win-x64\\node.exe",
+    "args": [
+      "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node_modules\\pnpm\\bin\\pnpm.cjs",
+      "--filter",
+      "@sugat/driver-mobile",
+      "exec",
+      "expo",
+      "export",
+      "--platform",
+      "android",
+      "--max-workers",
+      "2"
+    ],
+    "cwd": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-validation",
+    "startedAt": "2026-09-18T14:05:20.516Z",
+    "finishedAt": "2026-09-18T14:05:32.337Z",
+    "exitCode": 0,
+    "error": null,
+    "log": "driver-mobile-android-export.log"
+  },
+  {
+    "label": "admin-mobile Android export",
+    "file": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node-v22.14.0-win-x64\\node.exe",
+    "args": [
+      "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node_modules\\pnpm\\bin\\pnpm.cjs",
+      "--filter",
+      "@sugat/admin-mobile",
+      "exec",
+      "expo",
+      "export",
+      "--platform",
+      "android",
+      "--max-workers",
+      "2"
+    ],
+    "cwd": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-validation",
+    "startedAt": "2026-09-18T14:05:32.359Z",
+    "finishedAt": "2026-09-18T14:05:42.413Z",
+    "exitCode": 0,
+    "error": null,
+    "log": "admin-mobile-android-export.log"
+  },
+  {
+    "label": "Integration runner compilation",
+    "file": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node-v22.14.0-win-x64\\node.exe",
+    "args": [
+      "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\node_modules\\pnpm\\bin\\pnpm.cjs",
+      "--filter",
+      "@sugat/api",
+      "exec",
+      "tsc",
+      "--noEmit",
+      "--target",
+      "es2022",
+      "--module",
+      "commonjs",
+      "--moduleResolution",
+      "node",
+      "--esModuleInterop",
+      "--skipLibCheck",
+      "scripts/e2e-final-release-gate.ts",
+      "scripts/pilot-migration-gate.ts",
+      "scripts/pilot-stack-browser.ts"
+    ],
+    "cwd": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-validation",
+    "startedAt": "2026-09-18T14:05:42.423Z",
+    "finishedAt": "2026-09-18T14:05:46.771Z",
+    "exitCode": 0,
+    "error": null,
+    "log": "integration-runner-compilation.log"
+  },
+  {
+    "label": "Whitespace check",
+    "file": "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-pilot-tools\\mingit\\cmd\\git.exe",
+    "args": [
+      "-c",
+      "safe.directory=D:/MY APP/SUGAT_APP",
+      "-c",
+      "core.autocrlf=false",
+      "diff",
+      "--check"
+    ],
+    "cwd": "D:\\MY APP\\SUGAT_APP",
+    "startedAt": "2026-09-18T14:05:46.790Z",
+    "finishedAt": "2026-09-18T14:05:46.933Z",
+    "exitCode": 0,
+    "error": null,
+    "log": "whitespace-check.log"
+  }
+]

@@ -1,47 +1,1975 @@
 import NetInfo from '@react-native-community/netinfo';
-import { colors, radii, spacing, SUGAT_BRAND_TAGLINE, touchTarget } from '@sugat/theme';
-import * as Linking from 'expo-linking';
+import { mobileColors as colors } from '@sugat/theme';
 import { StatusBar } from 'expo-status-bar';
-import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, AppState, Image, ImageBackground, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { ApiError, API_URL, login } from './src/api/client';
-import { Assignment, completeTrip, getAssignment, startTrip } from './src/api/trips';
-import { clearSession, getAccessToken } from './src/auth/session';
-import { requestAndroidNotificationPermission } from './src/location/android-permissions';
-import { clearCompletedTripQueue, requestTrackingPermissions, restoreTracking, startTracking, stopTracking, syncQueue, trackingStatus } from './src/location/tracker';
+import React, {
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  AppState,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import {
+  SafeAreaProvider,
+  SafeAreaView,
+} from 'react-native-safe-area-context';
 
-type GpsState = { running: boolean; queued: number; lastUpload: string | null };
-let currentStartEligibility = true;
-const ago = (iso: string | null) => { if (!iso) return 'NEVER'; const seconds = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000)); return seconds < 60 ? `${seconds} SEC AGO` : `${Math.floor(seconds / 60)} MIN AGO`; };
+import {
+  ApiError,
+  changePassword,
+  login,
+  logout as revokeSession,
+} from './src/api/client';
+
+import {
+  Assignment,
+  Operations,
+  completeTrip,
+  getOperations,
+  setOccupancy,
+  startTrip,
+} from './src/api/trips';
+
+import {
+  clearSession,
+  getAccessToken,
+  mustChangePassword,
+} from './src/auth/session';
+
+import {
+  requestAndroidNotificationPermission,
+} from './src/location/android-permissions';
+
+import {
+  clearCompletedTripQueue,
+  permissionRecoveryMessage,
+  reconcileAuthoritativeTracking,
+  requestTrackingPermissions,
+  startTracking,
+  stopTracking,
+  syncQueue,
+  trackingStatus,
+  TrackingPermissionState,
+} from './src/location/tracker';
+
+import {
+  completeTrackingLifecycle,
+} from './src/location/tracking-lifecycle';
+
+type GpsState = {
+  running: boolean;
+  queued: number;
+  maxQueued: number;
+  lastUpload: string | null;
+  permissionState: TrackingPermissionState;
+};
 
 export default function App() {
-  const [booting, setBooting] = useState(true), [authenticated, setAuthenticated] = useState(false), [assignment, setAssignment] = useState<Assignment | null>(null);
-  const [email, setEmail] = useState(''), [password, setPassword] = useState(''), [busy, setBusy] = useState(false), [error, setError] = useState(''), [online, setOnline] = useState(true);
-  const [gps, setGps] = useState<GpsState>({ running: false, queued: 0, lastUpload: null });
-  const refreshGps = useCallback(async () => { const status = await trackingStatus(); setGps({ running: status.running, queued: status.queued, lastUpload: status.lastUpload }); }, []);
-  const loadAssignment = useCallback(async () => {
-    try { const current = await getAssignment(); currentStartEligibility = current?.status === 'ACTIVE' || current?.compliance.eligible !== false; setAssignment(current); if (current?.status === 'READY' && !current.compliance.eligible) setError(`${current.compliance.code}: ${current.compliance.message}`); if (current?.status === 'ACTIVE') { await restoreTracking(current.id); try { await syncQueue(current.id); } catch {} } await refreshGps(); return current; }
-    catch (caught) { if (caught instanceof ApiError && caught.status === 401) { await clearSession(); setAuthenticated(false); setError('Session expired. Please log in again.'); } throw caught; }
-  }, [refreshGps]);
-  useEffect(() => { void (async () => { try { if (await getAccessToken()) { setAuthenticated(true); await loadAssignment(); } } catch (caught) { if (caught instanceof ApiError && caught.status === 401) { await clearSession(); setAuthenticated(false); } else setError(caught instanceof Error ? caught.message : 'Unable to restore session.'); } finally { setBooting(false); } })(); }, [loadAssignment]);
-  useEffect(() => NetInfo.addEventListener(state => { const connected = Boolean(state.isConnected && state.isInternetReachable !== false); setOnline(connected); if (connected && assignment?.status === 'ACTIVE') void syncQueue(assignment.id).then(refreshGps).catch(() => {}); }), [assignment?.id, assignment?.status, refreshGps]);
-  useEffect(() => { const timer = setInterval(() => void refreshGps(), 3000); const sub = AppState.addEventListener('change', state => { if (state === 'active' && authenticated) void loadAssignment().catch(() => {}); }); return () => { clearInterval(timer); sub.remove(); }; }, [authenticated, loadAssignment, refreshGps]);
-  async function submitLogin() { if (!email.trim() || !password) return; setBusy(true); setError(''); try { await login(email.trim(), password); setAuthenticated(true); await loadAssignment(); } catch (caught) { setError(caught instanceof Error ? caught.message : 'Login failed.'); } finally { setBusy(false); } }
-  async function begin() { if (!assignment) return; if (!assignment.compliance.eligible) { setError(`${assignment.compliance.code}: ${assignment.compliance.message}`); return; } setBusy(true); setError(''); try { const notification = await requestAndroidNotificationPermission(); if (!notification.granted) { setError(notification.reason); return; } const permission = await requestTrackingPermissions(); if (!permission.granted) { setError(permission.reason); return; } await startTrip(assignment.id); await startTracking(assignment.id); await loadAssignment(); } catch (caught) { setError(caught instanceof Error ? caught.message : 'Trip could not start.'); try { await loadAssignment(); } catch {} } finally { setBusy(false); } }
-  function confirmComplete() { if (!assignment) return; Alert.alert('Complete this trip?', 'Passengers will stop seeing this vehicle after the backend confirms completion.', [{ text: 'Cancel', style: 'cancel' }, { text: 'COMPLETE', style: 'destructive', onPress: () => void finish() }]); }
-  async function finish() { if (!assignment) return; setBusy(true); setError(''); try { await syncQueue(assignment.id); await completeTrip(assignment.id); await stopTracking(); await clearCompletedTripQueue(assignment.id); setAssignment(null); await loadAssignment(); } catch (caught) { setError(`${caught instanceof Error ? caught.message : 'Completion failed.'} Tracking remains active until completion succeeds.`); } finally { setBusy(false); } }
-  function logout() { if (assignment?.status === 'ACTIVE') { setError('Complete the active trip before logging out so tracking is not orphaned.'); return; } Alert.alert('Log out?', 'SUGAT will not track your location while off duty.', [{ text: 'Cancel', style: 'cancel' }, { text: 'LOG OUT', onPress: () => void (async () => { await stopTracking(); await clearSession(); setAuthenticated(false); setAssignment(null); setPassword(''); })() }]); }
-  if (booting) return <Shell><View style={styles.center}><ActivityIndicator size="large" color={colors.gold} /><Text style={styles.muted}>RESTORING SESSION…</Text></View></Shell>;
-  if (!authenticated) return <Shell><KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.center}><Wordmark /><Text style={styles.tagline}>{SUGAT_BRAND_TAGLINE}</Text><Text style={styles.title}>Driver Login</Text><TextInput accessibilityLabel="Driver email" style={styles.input} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" placeholder="Driver email" value={email} onChangeText={setEmail} /><TextInput accessibilityLabel="Password" style={styles.input} secureTextEntry placeholder="Password" value={password} onChangeText={setPassword} />{error ? <ErrorMessage text={error} /> : null}<Action label={busy ? 'SIGNING IN…' : 'SIGN IN'} disabled={busy || !email || !password} onPress={() => void submitLogin()} /><Text style={styles.server}>SERVER: {API_URL || 'NOT CONFIGURED'}</Text></KeyboardAvoidingView></Shell>;
-  const active = assignment?.status === 'ACTIVE', next = assignment?.route.stops.find(stop => stop.sequence > (assignment?.lastPassedSequence ?? 0))?.stop.name;
-  return <Shell><ScrollView contentContainerStyle={styles.content}><View style={styles.header}><Wordmark /><Pressable accessibilityRole="button" onPress={logout} hitSlop={16}><Text style={styles.link}>LOG OUT</Text></Pressable></View><DriverHero assignment={assignment} />{assignment ? <><Card label="ASSIGNED VEHICLE" value={assignment.vehicle.displayName} detail={`${assignment.vehicle.type} · ${assignment.vehicle.bodyNumber ?? assignment.vehicle.plateNumber}`} /><Card label="ROUTE" value={assignment.route.name} detail={assignment.route.direction} /><Card label="DEPARTURE" value={new Date(assignment.scheduledDepartureAt).toLocaleString()} />{active && <><Card label="NEXT STOP" value={next ?? 'Route destination'} /><View style={styles.grid}><Status label="GPS" value={gps.running ? 'ACTIVE' : 'NOT RUNNING'} good={gps.running} /><Status label="INTERNET" value={online ? 'ONLINE' : 'OFFLINE'} good={online} /></View><Card label="LOCATION SYNC" value={gps.queued ? `${gps.queued} LOCATIONS WAITING` : 'QUEUE CLEAR'} detail={`LAST UPLOAD: ${ago(gps.lastUpload)}`} />{!online && <Text style={styles.offline}>INTERNET OFFLINE{`\n`}GPS RECORDING CONTINUES{`\n`}WILL SYNC AUTOMATICALLY</Text>}</>}{error ? <ErrorMessage text={error} /> : null}{error.includes('Settings') && <Pressable onPress={() => Linking.openSettings()}><Text style={styles.settings}>OPEN DEVICE SETTINGS</Text></Pressable>}<Action label={busy ? 'PLEASE WAIT…' : active ? 'COMPLETE TRIP' : 'START TRIP'} danger={active} disabled={busy} onPress={active ? confirmComplete : () => void begin()} /></> : <View style={styles.empty}><Text style={styles.emptyTitle}>WALAY ASSIGNED NGA BIYAHE KARON.</Text><Text style={styles.muted}>Contact SUGAT Admin if you expected an assignment.</Text>{error ? <ErrorMessage text={error} /> : null}<Action label="REFRESH" disabled={busy} onPress={() => void loadAssignment()} /></View>}</ScrollView></Shell>;
+  const [booting, setBooting] = useState(true);
+
+  const [
+    authenticated,
+    setAuthenticated,
+  ] = useState(false);
+
+  const [
+    assignment,
+    setAssignment,
+  ] = useState<Assignment | null>(null);
+
+  const [
+    operations,
+    setOperations,
+  ] = useState<Operations | null>(null);
+
+  const [
+    selectedStartStopId,
+    setSelectedStartStopId,
+  ] = useState('');
+
+  const [
+    selectedDestinationStopId,
+    setSelectedDestinationStopId,
+  ] = useState('');
+
+  const [
+    startSearch,
+    setStartSearch,
+  ] = useState('');
+
+  const [
+    destinationSearch,
+    setDestinationSearch,
+  ] = useState('');
+
+  const [
+    startSearchFocused,
+    setStartSearchFocused,
+  ] = useState(false);
+
+  const [
+    destinationSearchFocused,
+    setDestinationSearchFocused,
+  ] = useState(false);
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const [
+    passwordChangeRequired,
+    setPasswordChangeRequired,
+  ] = useState(false);
+
+  const [
+    newPassword,
+    setNewPassword,
+  ] = useState('');
+
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [online, setOnline] = useState(true);
+
+  const [
+    permissionNotice,
+    setPermissionNotice,
+  ] = useState('');
+
+  const [gps, setGps] = useState<GpsState>({
+    running: false,
+    queued: 0,
+    maxQueued: 5000,
+    lastUpload: null,
+    permissionState: 'UNKNOWN',
+  });
+
+  const refreshGps = useCallback(
+    async () => {
+      try {
+        const status = await trackingStatus();
+
+        setGps(status);
+
+        setPermissionNotice(
+          permissionRecoveryMessage(
+            status.permissionState,
+          ) ?? '',
+        );
+      } catch {
+        // GPS status is informational only.
+      }
+    },
+    [],
+  );
+
+  /*
+   * Load the authoritative driver state.
+   *
+   * The driver does not select a route or vehicle.
+   * The backend resolves:
+   *
+   * driver -> assigned vehicle -> default route
+   */
+  const loadAssignment = useCallback(
+    async () => {
+      const currentOperations =
+        await getOperations();
+
+      setOperations(currentOperations);
+
+      const current =
+        currentOperations.activeTrip ?? null;
+
+      setAssignment(current);
+
+      await reconcileAuthoritativeTracking(
+        current,
+      );
+
+      if (current?.status === 'ACTIVE') {
+        try {
+          await syncQueue(current.id);
+        } catch {
+          // Queue retries automatically.
+        }
+      }
+
+      await refreshGps();
+
+      return current;
+    },
+    [refreshGps],
+  );
+
+  /*
+   * Restore authenticated session.
+   */
+  useEffect(() => {
+    void (async () => {
+      try {
+        const token = await getAccessToken();
+
+        if (token) {
+          setAuthenticated(true);
+
+          const required =
+            await mustChangePassword();
+
+          setPasswordChangeRequired(
+            required,
+          );
+
+          if (!required) {
+            await loadAssignment();
+          }
+        }
+      } catch (caught) {
+        if (
+          caught instanceof ApiError &&
+          caught.status === 401
+        ) {
+          await clearSession();
+          setAuthenticated(false);
+        } else {
+          setError(
+            caught instanceof Error
+              ? caught.message
+              : 'Unable to restore session.',
+          );
+        }
+      } finally {
+        setBooting(false);
+      }
+    })();
+  }, [loadAssignment]);
+
+  /*
+   * Network monitoring.
+   */
+  useEffect(() => {
+    const unsubscribe =
+      NetInfo.addEventListener(state => {
+        const connected = Boolean(
+          state.isConnected &&
+            state.isInternetReachable !== false,
+        );
+
+        setOnline(connected);
+
+        if (
+          connected &&
+          assignment?.status === 'ACTIVE'
+        ) {
+          void syncQueue(assignment.id)
+            .then(refreshGps)
+            .catch(() => {});
+        }
+      });
+
+    return unsubscribe;
+  }, [
+    assignment?.id,
+    assignment?.status,
+    refreshGps,
+  ]);
+
+  /*
+   * Periodic GPS status and foreground
+   * reconciliation.
+   */
+  useEffect(() => {
+    const timer = setInterval(() => {
+      void refreshGps();
+    }, 3000);
+
+    const subscription =
+      AppState.addEventListener(
+        'change',
+        state => {
+          if (
+            state === 'active' &&
+            authenticated &&
+            !passwordChangeRequired
+          ) {
+            void loadAssignment().catch(
+              () => {},
+            );
+          }
+        },
+      );
+
+    return () => {
+      clearInterval(timer);
+      subscription.remove();
+    };
+  }, [
+    authenticated,
+    passwordChangeRequired,
+    loadAssignment,
+    refreshGps,
+  ]);
+
+  /*
+   * LOGIN
+   */
+  async function submitLogin() {
+    if (!email.trim() || !password) {
+      return;
+    }
+
+    setBusy(true);
+    setError('');
+
+    try {
+      const session = await login(
+        email.trim(),
+        password,
+      );
+
+      setAuthenticated(true);
+
+      const requiresPasswordChange =
+        Boolean(
+          session.mustChangePassword,
+        );
+
+      setPasswordChangeRequired(
+        requiresPasswordChange,
+      );
+
+      if (!requiresPasswordChange) {
+        await loadAssignment();
+      }
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : 'Login failed.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /*
+   * FIRST LOGIN PASSWORD CHANGE
+   */
+  async function submitPasswordChange() {
+    if (!newPassword) {
+      return;
+    }
+
+    setBusy(true);
+    setError('');
+
+    try {
+      await changePassword(
+        password,
+        newPassword,
+      );
+
+      setPasswordChangeRequired(false);
+      setPassword('');
+      setNewPassword('');
+
+      await loadAssignment();
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : 'Password could not be changed.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /*
+   * DRIVER ROUTE SELECTION
+   *
+   * FROM and TO are canonical database stops returned by
+   * /driver/operations. Free-text values are never sent to
+   * the backend.
+   */
+  const registeredVehicle =
+    operations?.vehicles.length === 1
+      ? operations.vehicles[0]
+      : null;
+
+  /*
+   * FROM / TO selectors use the canonical stop directory
+   * returned by /driver/operations.
+   *
+   * Route coverage must not limit which canonical locations
+   * the driver can search or select. Route resolution happens
+   * only after both FROM and TO have been selected.
+   *
+   * STAGING TEST ONLY records are excluded from the driver UI.
+   */
+  const canonicalStops =
+    operations?.stops.filter(
+      stop =>
+        stop.cityMunicipality !==
+          'STAGING TEST ONLY' &&
+        stop.province !== 'STAGING TEST ONLY',
+    ) ?? [];
+
+  const validStartStops = canonicalStops;
+
+  const validDestinationStops =
+    selectedStartStopId
+      ? canonicalStops.filter(
+          stop =>
+            stop.id !== selectedStartStopId,
+        )
+      : [];
+
+  const selectedRoute =
+    selectedStartStopId &&
+    selectedDestinationStopId &&
+    operations
+      ? [...operations.routes]
+          .filter(route => {
+            const start = route.stops.find(
+              routeStop =>
+                routeStop.stopId ===
+                selectedStartStopId,
+            );
+
+            const destination =
+              route.stops.find(
+                routeStop =>
+                  routeStop.stopId ===
+                  selectedDestinationStopId,
+            );
+
+            return Boolean(
+              start &&
+                destination &&
+                start.boardingAllowed &&
+                destination.dropoffAllowed &&
+                start.sequence <
+                  destination.sequence,
+            );
+          })
+          .sort(
+            (a, b) =>
+              a.name.localeCompare(b.name) ||
+              a.id.localeCompare(b.id),
+          )[0] ?? null
+      : null;
+
+  const normalizedStartSearch =
+    startSearch.trim().toLowerCase();
+
+  const normalizedDestinationSearch =
+    destinationSearch.trim().toLowerCase();
+
+  const startSuggestions =
+    validStartStops
+      .filter(stop =>
+        !normalizedStartSearch
+          ? true
+          : `${stop.name} ${stop.cityMunicipality ?? ''} ${stop.province ?? ''}`
+              .toLowerCase()
+              .includes(normalizedStartSearch),
+      )
+      .slice(0, 8);
+
+  const destinationSuggestions =
+    validDestinationStops
+      .filter(stop =>
+        !normalizedDestinationSearch
+          ? true
+          : `${stop.name} ${stop.cityMunicipality ?? ''} ${stop.province ?? ''}`
+              .toLowerCase()
+              .includes(
+                normalizedDestinationSearch,
+              ),
+      )
+      .slice(0, 8);
+
+  /*
+   * START TRIP
+   *
+   * The driver selects canonical FROM and TO stops.
+   * The app resolves a valid active route containing that
+   * ordered segment and submits database IDs to the API.
+   */
+  async function begin() {
+    if (
+      assignment ||
+      !operations ||
+      !operations.compliance.eligible ||
+      !registeredVehicle ||
+      !selectedStartStopId ||
+      !selectedDestinationStopId ||
+      !selectedRoute
+    ) {
+      return;
+    }
+
+    setBusy(true);
+    setError('');
+
+    try {
+      const notification =
+        await requestAndroidNotificationPermission();
+
+      if (!notification.granted) {
+        setError(notification.reason);
+        return;
+      }
+
+      const permission =
+        await requestTrackingPermissions();
+
+      if (!permission.granted) {
+        setError(permission.reason);
+        return;
+      }
+
+      const trip = await startTrip({
+        routeId: selectedRoute.id,
+        vehicleId: registeredVehicle.id,
+        startStopId: selectedStartStopId,
+        destinationStopId:
+          selectedDestinationStopId,
+      });
+
+      await startTracking(trip.id);
+
+      await loadAssignment();
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : 'Trip could not start.',
+      );
+
+      try {
+        await loadAssignment();
+      } catch {
+        // Server reconciliation will retry.
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /*
+   * FULL / VACANT
+   */
+  async function occupancy(
+    value: 'VACANT' | 'FULL',
+  ) {
+    if (!assignment) {
+      return;
+    }
+
+    setBusy(true);
+    setError('');
+
+    try {
+      const updated = await setOccupancy(
+        assignment.id,
+        value,
+      );
+
+      setAssignment(current =>
+        current
+          ? {
+              ...current,
+              occupancyStatus:
+                updated.occupancyStatus,
+            }
+          : current,
+      );
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : 'Occupancy update failed.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /*
+   * END TRIP CONFIRMATION
+   */
+  function confirmComplete() {
+    if (!assignment) {
+      return;
+    }
+
+    Alert.alert(
+      'END THIS TRIP?',
+      'The vehicle will stop appearing as an active trip to passengers.',
+      [
+        {
+          text: 'CANCEL',
+          style: 'cancel',
+        },
+        {
+          text: 'END TRIP',
+          style: 'destructive',
+          onPress: () => void finish(),
+        },
+      ],
+    );
+  }
+
+  /*
+   * END TRIP
+   */
+  async function finish() {
+    if (!assignment) {
+      return;
+    }
+
+    setBusy(true);
+    setError('');
+
+    try {
+      await completeTrackingLifecycle(
+        assignment.id,
+        {
+          sync: syncQueue,
+          complete: completeTrip,
+          stop: stopTracking,
+          clearQueue:
+            clearCompletedTripQueue,
+        },
+      );
+
+      setAssignment(null);
+      setSelectedStartStopId('');
+      setSelectedDestinationStopId('');
+      setStartSearch('');
+      setDestinationSearch('');
+      setStartSearchFocused(false);
+      setDestinationSearchFocused(false);
+
+      await loadAssignment();
+    } catch (caught) {
+      setError(
+        `${
+          caught instanceof Error
+            ? caught.message
+            : 'Completion failed.'
+        } The app will reconcile tracking with the server automatically.`,
+      );
+
+      try {
+        await loadAssignment();
+      } catch {
+        // Reconciliation will retry.
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /*
+   * LOGOUT
+   */
+  function logout() {
+    if (
+      assignment?.status === 'ACTIVE'
+    ) {
+      setError(
+        'Please END TRIP before logging out.',
+      );
+      return;
+    }
+
+    Alert.alert(
+      'LOG OUT?',
+      'Your SUGAT driver session will be ended.',
+      [
+        {
+          text: 'CANCEL',
+          style: 'cancel',
+        },
+        {
+          text: 'LOG OUT',
+          onPress: () =>
+            void (async () => {
+              try {
+                await stopTracking();
+              } catch {
+                // Continue logout.
+              }
+
+              await revokeSession();
+
+              setAuthenticated(false);
+              setAssignment(null);
+              setOperations(null);
+              setEmail('');
+              setPassword('');
+              setNewPassword('');
+              setError('');
+            })(),
+        },
+      ],
+    );
+  }
+
+  /*
+   * BOOT SCREEN
+   */
+  if (booting) {
+    return (
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.safe}>
+          <StatusBar style="light" />
+
+          <View style={styles.center}>
+            <Text style={styles.logo}>
+              SUGAT
+            </Text>
+
+            <ActivityIndicator
+              size="large"
+              color={colors.gold}
+            />
+
+            <Text style={styles.muted}>
+              Loading driver app…
+            </Text>
+          </View>
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
+  }
+
+  /*
+   * LOGIN SCREEN
+   */
+  if (!authenticated) {
+    return (
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.safe}>
+          <StatusBar style="light" />
+
+          <KeyboardAvoidingView
+            style={styles.flex}
+            behavior={
+              Platform.OS === 'ios'
+                ? 'padding'
+                : undefined
+            }
+          >
+            <ScrollView
+              contentContainerStyle={
+                styles.loginContainer
+              }
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.loginHeader}>
+                <Text style={styles.logo}>
+                  SUGAT
+                </Text>
+
+                <Text style={styles.loginTitle}>
+                  DRIVER
+                </Text>
+
+                <Text
+                  style={styles.loginSubtitle}
+                >
+                  Scan. Track. Ride.
+                </Text>
+              </View>
+
+              <View style={styles.card}>
+                <Text style={styles.label}>
+                  DRIVER LOGIN
+                </Text>
+
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="Email"
+                  placeholderTextColor="#9BAFC1"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="email-address"
+                  editable={!busy}
+                  style={styles.input}
+                />
+
+                <TextInput
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Password"
+                  placeholderTextColor="#9BAFC1"
+                  secureTextEntry
+                  autoCapitalize="none"
+                  editable={!busy}
+                  style={styles.input}
+                />
+
+                {error ? (
+                  <ErrorBox message={error} />
+                ) : null}
+
+                <Action
+                  label={
+                    busy
+                      ? 'PLEASE WAIT…'
+                      : 'LOGIN'
+                  }
+                  disabled={
+                    busy ||
+                    !email.trim() ||
+                    !password
+                  }
+                  onPress={() =>
+                    void submitLogin()
+                  }
+                />
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
+  }
+
+  /*
+   * PASSWORD CHANGE SCREEN
+   */
+  if (passwordChangeRequired) {
+    return (
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.safe}>
+          <StatusBar style="light" />
+
+          <KeyboardAvoidingView
+            style={styles.flex}
+            behavior={
+              Platform.OS === 'ios'
+                ? 'padding'
+                : undefined
+            }
+          >
+            <ScrollView
+              contentContainerStyle={
+                styles.loginContainer
+              }
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.loginHeader}>
+                <Text style={styles.logo}>
+                  SUGAT
+                </Text>
+
+                <Text style={styles.loginTitle}>
+                  CHANGE PASSWORD
+                </Text>
+
+                <Text
+                  style={styles.loginSubtitle}
+                >
+                  Please create a new driver
+                  password.
+                </Text>
+              </View>
+
+              <View style={styles.card}>
+                <Text style={styles.label}>
+                  NEW PASSWORD
+                </Text>
+
+                <TextInput
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  placeholder="New password"
+                  placeholderTextColor="#9BAFC1"
+                  secureTextEntry
+                  autoCapitalize="none"
+                  editable={!busy}
+                  style={styles.input}
+                />
+
+                {error ? (
+                  <ErrorBox message={error} />
+                ) : null}
+
+                <Action
+                  label={
+                    busy
+                      ? 'PLEASE WAIT…'
+                      : 'SAVE PASSWORD'
+                  }
+                  disabled={
+                    busy ||
+                    newPassword.length < 12
+                  }
+                  onPress={() =>
+                    void submitPasswordChange()
+                  }
+                />
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
+  }
+
+  /*
+   * MAIN DRIVER SCREEN
+   */
+  return (
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.safe}>
+        <StatusBar style="light" />
+
+        <ScrollView
+          contentContainerStyle={
+            styles.container
+          }
+        >
+          <View style={styles.header}>
+            <View>
+              <Text style={styles.logo}>
+                SUGAT
+              </Text>
+
+              <Text
+                style={styles.headerSubtitle}
+              >
+                DRIVER APP
+              </Text>
+            </View>
+
+            <Pressable
+              onPress={logout}
+              disabled={busy}
+              style={styles.logoutButton}
+            >
+              <Text style={styles.logoutText}>
+                LOG OUT
+              </Text>
+            </Pressable>
+          </View>
+
+          <View
+            style={[
+              styles.statusBar,
+              online
+                ? styles.statusOnline
+                : styles.statusOffline,
+            ]}
+          >
+            <View
+              style={[
+                styles.statusDot,
+                online
+                  ? styles.dotOnline
+                  : styles.dotOffline,
+              ]}
+            />
+
+            <Text style={styles.statusText}>
+              {online
+                ? 'INTERNET ONLINE'
+                : 'INTERNET OFFLINE'}
+            </Text>
+          </View>
+
+          {error ? (
+            <ErrorBox message={error} />
+          ) : null}
+
+          {assignment ? (
+            /*
+             * ACTIVE TRIP
+             */
+            <View>
+              <View style={styles.activeHeader}>
+                <Text
+                  style={styles.activeTitle}
+                >
+                  TRIP ACTIVE
+                </Text>
+
+                <Text
+                  style={styles.activeSubtitle}
+                >
+                  Your vehicle is visible to
+                  passengers.
+                </Text>
+              </View>
+
+              <View
+                style={styles.occupancyCard}
+              >
+                <Text style={styles.label}>
+                  CURRENT STATUS
+                </Text>
+
+                <Text
+                  style={[
+                    styles.occupancyValue,
+                    assignment.occupancyStatus ===
+                    'FULL'
+                      ? styles.fullText
+                      : styles.vacantText,
+                  ]}
+                >
+                  {assignment.occupancyStatus ??
+                    'VACANT'}
+                </Text>
+              </View>
+
+              <View style={styles.buttonRow}>
+                <View
+                  style={styles.buttonHalf}
+                >
+                  <Action
+                    label="FULL"
+                    danger
+                    disabled={
+                      busy || !online
+                    }
+                    onPress={() =>
+                      void occupancy('FULL')
+                    }
+                  />
+                </View>
+
+                <View
+                  style={styles.buttonHalf}
+                >
+                  <Action
+                    label="VACANT"
+                    disabled={
+                      busy || !online
+                    }
+                    onPress={() =>
+                      void occupancy('VACANT')
+                    }
+                  />
+                </View>
+              </View>
+
+              <View style={styles.gpsCard}>
+                <View
+                  style={styles.gpsHeader}
+                >
+                  <Text style={styles.label}>
+                    GPS TRACKING
+                  </Text>
+
+                  <View
+                    style={styles.gpsStatus}
+                  >
+                    <View
+                      style={[
+                        styles.statusDot,
+                        gps.running
+                          ? styles.dotOnline
+                          : styles.dotOffline,
+                      ]}
+                    />
+
+                    <Text
+                      style={
+                        styles.gpsStatusText
+                      }
+                    >
+                      {gps.running
+                        ? 'ACTIVE'
+                        : 'INACTIVE'}
+                    </Text>
+                  </View>
+                </View>
+
+                {gps.queued > 0 ? (
+                  <Text style={styles.muted}>
+                    {gps.queued} GPS point
+                    {gps.queued === 1
+                      ? ''
+                      : 's'}{' '}
+                    waiting to sync.
+                  </Text>
+                ) : (
+                  <Text style={styles.muted}>
+                    GPS data is synchronized.
+                  </Text>
+                )}
+
+                {permissionNotice ? (
+                  <Text
+                    style={styles.warning}
+                  >
+                    {permissionNotice}
+                  </Text>
+                ) : null}
+              </View>
+
+              <Action
+                label={
+                  busy
+                    ? 'PLEASE WAIT…'
+                    : 'END TRIP'
+                }
+                danger
+                disabled={
+                  busy || !online
+                }
+                onPress={confirmComplete}
+              />
+            </View>
+          ) : (
+            /*
+             * READY / START TRIP
+             */
+            <View>
+              <View style={styles.startHeader}>
+                <Text
+                  style={styles.startTitle}
+                >
+                  READY TO DRIVE
+                </Text>
+
+                <Text
+                  style={styles.startSubtitle}
+                >
+                  Select your route and press
+                  START TRIP when you are ready
+                  to depart.
+                </Text>
+              </View>
+
+              {registeredVehicle ? (
+                <View style={styles.infoCard}>
+                  <Text style={styles.label}>
+                    REGISTERED VEHICLE
+                  </Text>
+
+                  <Text
+                    style={styles.vehicleName}
+                  >
+                    {registeredVehicle.displayName}
+                  </Text>
+
+                  <Text style={styles.plate}>
+                    {registeredVehicle.plateNumber}
+                  </Text>
+
+                  {registeredVehicle.bodyNumber ? (
+                    <Text style={styles.muted}>
+                      Body No.{' '}
+                      {registeredVehicle.bodyNumber}
+                    </Text>
+                  ) : null}
+                </View>
+              ) : (
+                <View style={styles.complianceBox}>
+                  <Text
+                    style={styles.complianceTitle}
+                  >
+                    VEHICLE NOT READY
+                  </Text>
+
+                  <Text style={styles.warning}>
+                    Exactly one active registered
+                    vehicle must be assigned to this
+                    driver before a trip can start.
+                  </Text>
+                </View>
+              )}
+
+              <View style={styles.infoCard}>
+                <Text style={styles.label}>
+                  START LOCATION / FROM
+                </Text>
+
+                <TextInput
+                  value={startSearch}
+                  onFocus={() =>
+                    setStartSearchFocused(true)
+                  }
+                  onChangeText={value => {
+                    setStartSearch(value);
+                    setSelectedStartStopId('');
+                    setSelectedDestinationStopId('');
+                    setDestinationSearch('');
+                    setDestinationSearchFocused(
+                      false,
+                    );
+                  }}
+                  placeholder="Search start location"
+                  placeholderTextColor="#6F8498"
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  style={styles.input}
+                />
+
+                {startSearchFocused &&
+                !selectedStartStopId ? (
+                  <View
+                    style={
+                      styles.suggestionList
+                    }
+                  >
+                    {startSuggestions.length ? (
+                      startSuggestions.map(stop => (
+                        <Pressable
+                          key={stop.id}
+                          onPress={() => {
+                            setSelectedStartStopId(
+                              stop.id,
+                            );
+                            setStartSearch(
+                              stop.name,
+                            );
+                            setSelectedDestinationStopId(
+                              '',
+                            );
+                            setDestinationSearch(
+                              '',
+                            );
+                            setStartSearchFocused(
+                              false,
+                            );
+                          }}
+                          style={({ pressed }) => [
+                            styles.suggestionItem,
+                            pressed &&
+                              styles.suggestionPressed,
+                          ]}
+                        >
+                          <Text
+                            style={
+                              styles.suggestionName
+                            }
+                          >
+                            {stop.name}
+                          </Text>
+
+                          {stop.cityMunicipality ||
+                          stop.province ? (
+                            <Text
+                              style={
+                                styles.suggestionMeta
+                              }
+                            >
+                              {[
+                                stop.cityMunicipality,
+                                stop.province,
+                              ]
+                                .filter(Boolean)
+                                .join(', ')}
+                            </Text>
+                          ) : null}
+                        </Pressable>
+                      ))
+                    ) : (
+                      <Text
+                        style={
+                          styles.suggestionEmpty
+                        }
+                      >
+                        No valid database location
+                        found.
+                      </Text>
+                    )}
+                  </View>
+                ) : null}
+
+                <Text style={styles.label}>
+                  DESTINATION / TO
+                </Text>
+
+                <TextInput
+                  value={destinationSearch}
+                  editable={Boolean(
+                    selectedStartStopId,
+                  )}
+                  onFocus={() =>
+                    setDestinationSearchFocused(
+                      true,
+                    )
+                  }
+                  onChangeText={value => {
+                    setDestinationSearch(value);
+                    setSelectedDestinationStopId(
+                      '',
+                    );
+                  }}
+                  placeholder={
+                    selectedStartStopId
+                      ? 'Search destination'
+                      : 'Select START LOCATION first'
+                  }
+                  placeholderTextColor="#6F8498"
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  style={styles.input}
+                />
+
+                {destinationSearchFocused &&
+                selectedStartStopId &&
+                !selectedDestinationStopId ? (
+                  <View
+                    style={
+                      styles.suggestionList
+                    }
+                  >
+                    {destinationSuggestions.length ? (
+                      destinationSuggestions.map(
+                        stop => (
+                          <Pressable
+                            key={stop.id}
+                            onPress={() => {
+                              setSelectedDestinationStopId(
+                                stop.id,
+                              );
+                              setDestinationSearch(
+                                stop.name,
+                              );
+                              setDestinationSearchFocused(
+                                false,
+                              );
+                            }}
+                            style={({
+                              pressed,
+                            }) => [
+                              styles.suggestionItem,
+                              pressed &&
+                                styles.suggestionPressed,
+                            ]}
+                          >
+                            <Text
+                              style={
+                                styles.suggestionName
+                              }
+                            >
+                              {stop.name}
+                            </Text>
+
+                            {stop.cityMunicipality ||
+                            stop.province ? (
+                              <Text
+                                style={
+                                  styles.suggestionMeta
+                                }
+                              >
+                                {[
+                                  stop.cityMunicipality,
+                                  stop.province,
+                                ]
+                                  .filter(Boolean)
+                                  .join(', ')}
+                              </Text>
+                            ) : null}
+                          </Pressable>
+                        ),
+                      )
+                    ) : (
+                      <Text
+                        style={
+                          styles.suggestionEmpty
+                        }
+                      >
+                        No valid destination is
+                        available from this start
+                        location.
+                      </Text>
+                    )}
+                  </View>
+                ) : null}
+
+                {selectedRoute ? (
+                  <View
+                    style={styles.routeResolved}
+                  >
+                    <Text style={styles.label}>
+                      OPERATING ROUTE
+                    </Text>
+
+                    <Text
+                      style={styles.routeName}
+                    >
+                      {selectedRoute.name}
+                    </Text>
+
+                    <Text style={styles.muted}>
+                      {selectedRoute.direction}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+
+              {operations &&
+              !operations.compliance.eligible ? (
+                <View
+                  style={styles.complianceBox}
+                >
+                  <Text
+                    style={
+                      styles.complianceTitle
+                    }
+                  >
+                    TRIP CANNOT START
+                  </Text>
+
+                  <Text
+                    style={styles.warning}
+                  >
+                    {operations.compliance
+                      .message ??
+                      'Driver requirements are not currently satisfied.'}
+                  </Text>
+                </View>
+              ) : null}
+
+              {permissionNotice ? (
+                <View style={styles.infoBox}>
+                  <Text
+                    style={styles.warning}
+                  >
+                    {permissionNotice}
+                  </Text>
+                </View>
+              ) : null}
+
+              <Action
+                label={
+                  busy
+                    ? 'PLEASE WAIT…'
+                    : 'START TRIP'
+                }
+                disabled={
+                  busy ||
+                  !online ||
+                  !operations ||
+                  !operations.compliance
+                    .eligible ||
+                  !registeredVehicle ||
+                  !selectedStartStopId ||
+                  !selectedDestinationStopId ||
+                  !selectedRoute
+                }
+                onPress={() =>
+                  void begin()
+                }
+              />
+
+              <Text
+                style={styles.footerNote}
+              >
+                GPS tracking starts
+                automatically when the trip
+                begins.
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    </SafeAreaProvider>
+  );
 }
-function DriverHero({ assignment }: { assignment: Assignment | null }) { const active = assignment?.status === 'ACTIVE'; return <ImageBackground accessibilityLabel="SUGAT driver reviewing a GPS route beside an assigned van" source={require('./assets/driver-hero.png')} resizeMode="cover" imageStyle={styles.heroImage} style={styles.hero}><View style={styles.heroShade}/><View style={styles.heroCopy}><Text style={[styles.heroStatus, { marginBottom: spacing.sm }]}>{SUGAT_BRAND_TAGLINE}</Text><Text style={styles.heroStatus}>{assignment ? active ? '● ACTIVE TRIP' : 'READY ASSIGNMENT' : 'NO CURRENT ASSIGNMENT'}</Text><Text style={styles.heroTitle}>{assignment ? active ? 'YOUR TRIP IS LIVE' : 'READY FOR YOUR NEXT TRIP?' : 'STAY READY'}</Text><Text style={styles.heroSubtitle}>{assignment ? `${assignment.driver.firstName} ${assignment.driver.lastName} · ${assignment.vehicle.displayName}` : 'Refresh when SUGAT Admin assigns your next route.'}</Text>{assignment && <Text style={styles.heroRoute}>{assignment.route.name} · {assignment.route.direction}</Text>}</View></ImageBackground>; }
-function Wordmark() { return <View style={styles.wordmark}><Image accessibilityLabel="Official SUGAT logo" source={require('./assets/sugat-logo-official.png')} resizeMode="contain" style={{ width: 105, height: 84, borderRadius: radii.sm, backgroundColor: colors.white }} /><Text style={styles.brand}>DRIVER</Text></View>; }
-function Shell({ children }: { children: React.ReactNode }) { return <SafeAreaProvider><SafeAreaView style={styles.safe}><StatusBar style="light" backgroundColor={colors.navy} /><View style={styles.shell}>{children}</View></SafeAreaView></SafeAreaProvider>; }
-function Action({ label, onPress, disabled, danger }: { label: string; onPress: () => void; disabled?: boolean; danger?: boolean }) { const blocked=disabled||(label==='START TRIP'&&!currentStartEligibility);return <Pressable accessibilityRole="button" accessibilityState={{disabled:blocked}} disabled={blocked} onPress={onPress} style={({ pressed }) => [styles.action, danger && styles.danger, (pressed || blocked) && styles.dim]}><Text style={styles.actionText}>{label}</Text></Pressable>; }
-function Card({ label, value, detail }: { label: string; value: string; detail?: string }) { return <View style={styles.card}><Text style={styles.label}>{label}</Text><Text style={styles.cardValue}>{value}</Text>{detail ? <Text style={styles.muted}>{detail}</Text> : null}</View>; }
-function Status({ label, value, good }: { label: string; value: string; good: boolean }) { return <View style={styles.card}><Text style={styles.label}>{label}</Text><Text style={[styles.status, !good && styles.bad]}>{value}</Text></View>; }
-function ErrorMessage({ text }: { text: string }) { return <Text accessibilityRole="alert" style={styles.error}>{text}</Text>; }
-const styles = StyleSheet.create({ safe: { flex: 1, backgroundColor: colors.navy }, shell: { flex: 1, padding: spacing.xl, backgroundColor: colors.background }, center: { flex: 1, justifyContent: 'center', gap: spacing.md }, content: { gap: spacing.md, paddingBottom: spacing.xxl }, header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm }, wordmark: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm }, logoPlaceholder: { width: 7, height: 27, borderRadius: 4, backgroundColor: colors.gold }, brand: { fontSize: 18, fontWeight: '900', letterSpacing: 2, color: colors.navy }, tagline: { fontSize: 12, fontWeight: '800', letterSpacing: 2, color: colors.textSecondary }, title: { fontSize: 28, fontWeight: '900', marginTop: spacing.xl, color: colors.navy }, input: { height: 56, borderWidth: 1, borderColor: colors.borderStrong, borderRadius: radii.md, paddingHorizontal: spacing.lg, backgroundColor: colors.white, fontSize: 17 }, action: { minHeight: 60, borderRadius: radii.md, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center', marginTop: spacing.sm }, danger: { backgroundColor: colors.danger }, dim: { opacity: .5 }, actionText: { color: colors.navy, fontSize: 16, fontWeight: '900', letterSpacing: 1 }, server: { fontSize: 10, color: colors.textMuted, textAlign: 'center' }, hero: { minHeight: 360, padding: spacing.xl, borderRadius: radii.lg, backgroundColor: colors.navy, overflow: 'hidden', justifyContent: 'flex-end' }, heroImage:{borderRadius:radii.lg},heroShade:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(5,22,43,.48)'},heroCopy:{zIndex:1,maxWidth:320}, heroStatus: { color: colors.gold, fontWeight: '900', fontSize: 12, letterSpacing: 1 }, heroTitle: { color: colors.white, fontSize: 29, lineHeight: 34, fontWeight: '900', marginTop: spacing.md, maxWidth: 320 }, heroSubtitle: { color: '#E4E7EC', marginTop: spacing.sm, fontSize: 15 }, heroRoute: { color: colors.white, fontWeight: '800', marginTop: spacing.lg }, routeLine: { position: 'absolute', right: -30, bottom: 25, width: 190, height: 4, borderRadius: 2, backgroundColor: colors.gold, transform: [{ rotate: '-7deg' }] }, card: { padding: spacing.lg, borderRadius: radii.md, backgroundColor: colors.white, gap: 6, flex: 1, borderWidth: 1, borderColor: colors.border }, label: { fontSize: 10, fontWeight: '900', letterSpacing: 1.5, color: colors.textSecondary }, cardValue: { fontSize: 20, fontWeight: '800', color: colors.navy }, muted: { color: colors.textSecondary, lineHeight: 20 }, grid: { flexDirection: 'row', gap: spacing.md }, status: { fontWeight: '900', color: colors.success }, bad: { color: colors.danger }, offline: { padding: spacing.lg, borderRadius: radii.md, backgroundColor: '#FFF4D6', fontWeight: '800', lineHeight: 22, color: '#714B00', textAlign: 'center' }, error: { padding: spacing.md, borderRadius: radii.sm, backgroundColor: '#FEE4E2', color: colors.danger, lineHeight: 20 }, settings: { color: colors.info, fontWeight: '900', textAlign: 'center', padding: spacing.md }, empty: { flex: 1, minHeight: 420, justifyContent: 'center', gap: spacing.lg }, emptyTitle: { fontSize: 24, fontWeight: '900', color: colors.navy, textAlign: 'center' }, link: { minHeight: touchTarget, textAlignVertical: 'center', fontSize: 12, fontWeight: '900', color: colors.info } });
+
+/*
+ * Reusable action button.
+ */
+function Action({
+  label,
+  disabled,
+  danger = false,
+  onPress,
+}: {
+  label: string;
+  disabled?: boolean;
+  danger?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.action,
+        danger && styles.actionDanger,
+        disabled &&
+          styles.actionDisabled,
+        pressed &&
+          !disabled &&
+          styles.actionPressed,
+      ]}
+    >
+      <Text
+        style={[
+          styles.actionText,
+          danger &&
+            styles.actionDangerText,
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+/*
+ * Error message.
+ */
+function ErrorBox({
+  message,
+}: {
+  message: string;
+}) {
+  return (
+    <View style={styles.errorBox}>
+      <Text style={styles.errorText}>
+        {message}
+      </Text>
+    </View>
+  );
+}
+
+/*
+ * Styles.
+ */
+const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
+
+  safe: {
+    flex: 1,
+    backgroundColor: '#07192D',
+  },
+
+  container: {
+    padding: 18,
+    paddingBottom: 40,
+  },
+
+  loginContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: 22,
+  },
+
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 18,
+  },
+
+  logo: {
+    color: '#D8B45A',
+    fontSize: 32,
+    fontWeight: '900',
+    letterSpacing: 3,
+  },
+
+  loginHeader: {
+    alignItems: 'center',
+    marginBottom: 28,
+  },
+
+  loginTitle: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: 2,
+    marginTop: 8,
+  },
+
+  loginSubtitle: {
+    color: '#A9B7C7',
+    fontSize: 13,
+    marginTop: 5,
+  },
+
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+
+  headerSubtitle: {
+    color: '#A9B7C7',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 2,
+    marginTop: 2,
+  },
+
+  logoutButton: {
+    minHeight: 44,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: '#34495E',
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  logoutText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+
+  statusBar: {
+    minHeight: 38,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+
+  statusOnline: {
+    backgroundColor: '#102D25',
+  },
+
+  statusOffline: {
+    backgroundColor: '#38201F',
+  },
+
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+
+  dotOnline: {
+    backgroundColor: '#55D68A',
+  },
+
+  dotOffline: {
+    backgroundColor: '#E66A62',
+  },
+
+  statusText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+
+  card: {
+    backgroundColor: '#0D2742',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#1B3B59',
+    padding: 16,
+    marginBottom: 14,
+  },
+
+  infoCard: {
+    backgroundColor: '#0D2742',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#1B3B59',
+    padding: 16,
+    marginBottom: 14,
+  },
+
+  label: {
+    color: '#8FA4B8',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+    marginBottom: 8,
+  },
+
+  input: {
+    height: 52,
+    backgroundColor: '#07192D',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#29445E',
+    color: '#FFFFFF',
+    paddingHorizontal: 14,
+    marginBottom: 12,
+    fontSize: 15,
+  },
+
+  suggestionList: {
+    backgroundColor: '#07192D',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#29445E',
+    marginTop: -6,
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+
+  suggestionItem: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1B3B59',
+  },
+
+  suggestionPressed: {
+    opacity: 0.7,
+  },
+
+  suggestionName: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+
+  suggestionMeta: {
+    color: '#8FA4B8',
+    fontSize: 11,
+    marginTop: 3,
+  },
+
+  suggestionEmpty: {
+    color: '#8FA4B8',
+    fontSize: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+
+  routeResolved: {
+    borderTopWidth: 1,
+    borderTopColor: '#1B3B59',
+    paddingTop: 14,
+    marginTop: 2,
+  },
+
+  muted: {
+    color: '#9BAFC1',
+    fontSize: 13,
+    lineHeight: 19,
+  },
+
+  vehicleName: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '900',
+    marginBottom: 4,
+  },
+
+  plate: {
+    color: '#D8B45A',
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+
+  routeName: {
+    color: '#FFFFFF',
+    fontSize: 19,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+
+  activeHeader: {
+    marginBottom: 14,
+    paddingVertical: 4,
+  },
+
+  activeTitle: {
+    color: '#55D68A',
+    fontSize: 25,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+
+  activeSubtitle: {
+    color: '#A9B7C7',
+    fontSize: 13,
+    marginTop: 4,
+  },
+
+  startHeader: {
+    marginBottom: 18,
+  },
+
+  startTitle: {
+    color: '#FFFFFF',
+    fontSize: 25,
+    fontWeight: '900',
+  },
+
+  startSubtitle: {
+    color: '#A9B7C7',
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 4,
+  },
+
+  occupancyCard: {
+    backgroundColor: '#102C45',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#284C68',
+    padding: 18,
+    marginBottom: 14,
+    alignItems: 'center',
+  },
+
+  occupancyValue: {
+    fontSize: 34,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+
+  fullText: {
+    color: '#F06C64',
+  },
+
+  vacantText: {
+    color: '#55D68A',
+  },
+
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 14,
+  },
+
+  buttonHalf: {
+    flex: 1,
+  },
+
+  action: {
+    minHeight: 58,
+    borderRadius: 12,
+    backgroundColor: '#D8B45A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 18,
+    marginBottom: 12,
+  },
+
+  actionDanger: {
+    backgroundColor: '#C94C48',
+  },
+
+  actionDisabled: {
+    opacity: 0.42,
+  },
+
+  actionPressed: {
+    opacity: 0.78,
+    transform: [
+      {
+        scale: 0.99,
+      },
+    ],
+  },
+
+  actionText: {
+    color: '#07192D',
+    fontSize: 15,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+
+  actionDangerText: {
+    color: '#FFFFFF',
+  },
+
+  complianceBox: {
+    backgroundColor: '#38201F',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#713B38',
+    padding: 14,
+    marginBottom: 14,
+  },
+
+  complianceTitle: {
+    color: '#F08A82',
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 1,
+    marginBottom: 5,
+  },
+
+  infoBox: {
+    backgroundColor: '#142C3D',
+    borderRadius: 12,
+    padding: 13,
+    marginBottom: 14,
+  },
+
+  gpsCard: {
+    backgroundColor: '#0B2238',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#1D405D',
+    padding: 14,
+    marginBottom: 14,
+  },
+
+  gpsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  gpsStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  gpsStatusText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+
+  warning: {
+    color: '#F0C978',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+
+  footerNote: {
+    textAlign: 'center',
+    color: '#71879A',
+    fontSize: 11,
+    marginTop: 4,
+    marginBottom: 18,
+  },
+
+  errorBox: {
+    backgroundColor: '#3A2020',
+    borderWidth: 1,
+    borderColor: '#75403E',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 14,
+  },
+
+  errorText: {
+    color: '#FFAAA4',
+    fontSize: 13,
+    lineHeight: 19,
+  },
+});

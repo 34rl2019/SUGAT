@@ -48,6 +48,11 @@ enum TripStatus {
   CANCELLED
 }
 
+enum OccupancyStatus {
+  VACANT
+  FULL
+}
+
 enum TripEventType {
   STARTED
   LOCATION_ACCEPTED
@@ -59,6 +64,12 @@ enum TripEventType {
   GPS_STALE
 }
 
+enum GpsIngestionStatus {
+  PROMOTED
+  REJECTED
+  STALE
+}
+
 model User {
   id            String           @id @default(uuid()) @db.Uuid
   email         String           @unique
@@ -66,6 +77,7 @@ model User {
   passwordHash  String
   role          Role
   accountStatus AccountStatus    @default(ACTIVE)
+  mustChangePassword Boolean     @default(false)
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
   driver        Driver?
@@ -91,9 +103,28 @@ model Driver {
   trips            Trip[]
   schedules        Schedule[]
   verificationSubmissions DriverVerificationSubmission[]
+  authorizedRoutes DriverRouteAuthorization[]
+  authorizedDevice DriverDevice?
 
   @@index([identityVerificationStatus])
   @@index([licenseVerificationStatus])
+}
+
+model DriverRouteAuthorization {
+  driverId String @db.Uuid
+  routeId String @db.Uuid
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  route Route @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  @@id([driverId, routeId])
+  @@index([routeId])
+}
+
+model DriverDevice {
+  id String @id @default(uuid()) @db.Uuid
+  driverId String @unique @db.Uuid
+  credentialHash String
+  authorizedAt DateTime @default(now())
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
 }
 
 model DriverVerificationSubmission {
@@ -130,6 +161,7 @@ model Vehicle {
   id               String      @id @default(uuid()) @db.Uuid
   type             VehicleType
   plateNumber      String      @unique
+  conductionSticker String?
   bodyNumber       String?
   displayName      String
   brand            String?
@@ -141,6 +173,7 @@ model Vehicle {
   assignedDriver   Driver?     @relation("AssignedDriver", fields: [assignedDriverId], references: [id])
   trips            Trip[]
   schedules        Schedule[]
+  currentLocations VehicleCurrentLocation[]
 }
 
 model Stop {
@@ -167,6 +200,7 @@ model Route {
   stops     RouteStop[]
   schedules Schedule[]
   trips     Trip[]
+  authorizedDrivers DriverRouteAuthorization[]
 }
 
 model RouteStop {
@@ -208,7 +242,9 @@ model Trip {
   driverId             String                  @db.Uuid
   vehicleId            String                  @db.Uuid
   status               TripStatus              @default(SCHEDULED)
-  scheduledDepartureAt DateTime
+  scheduledDepartureAt DateTime?
+  occupancyStatus      OccupancyStatus?
+  occupancyUpdatedAt   DateTime?
   startedAt            DateTime?
   endedAt              DateTime?
   lastLocationAt       DateTime?
@@ -218,7 +254,7 @@ model Trip {
   driver               Driver                  @relation(fields: [driverId], references: [id])
   vehicle              Vehicle                 @relation(fields: [vehicleId], references: [id])
   currentLocation      VehicleCurrentLocation?
-  locationHistory      TripLocationHistory[]
+  gpsIngestionEvents   GpsIngestionEvent[]
   events               TripEvent[]
 
   @@index([status, lastLocationAt])
@@ -238,26 +274,22 @@ model VehicleCurrentLocation {
   recordedAt DateTime
   updatedAt  DateTime @updatedAt
   trip       Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  vehicle    Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
   @@index([vehicleId, recordedAt])
 }
 
-model TripLocationHistory {
-  id              String   @id @default(uuid()) @db.Uuid
-  eventId         String   @unique
-  tripId          String   @db.Uuid
-  latitude        Float
-  longitude       Float
-  accuracy        Float
-  speed           Float?
-  heading         Float?
-  recordedAt      DateTime
-  suspicious      Boolean  @default(false)
+model GpsIngestionEvent {
+  eventId         String             @id
+  tripId          String             @db.Uuid
+  status          GpsIngestionStatus
   rejectionReason String?
-  receivedAt      DateTime @default(now())
-  trip            Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  receivedAt      DateTime           @default(now())
+  expiresAt       DateTime
+  trip            Trip               @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
-  @@index([tripId, recordedAt])
+  @@index([tripId, receivedAt])
+  @@index([expiresAt])
 }
 
 model TripEvent {
@@ -280,6 +312,7 @@ model RefreshSession {
   tokenHash String
   expiresAt DateTime
   revokedAt DateTime?
+  driverDeviceId String? @db.Uuid
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, expiresAt])

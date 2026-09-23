@@ -1,0 +1,56 @@
+
+> @sugat/api@0.1.0 test C:\Users\angub\AppData\Local\Temp\sugat-pilot-validation\apps\api
+> jest --runInBand
+
+[Nest] 2108  - 09/18/2026, 8:24:41 AM     LOG [RedisIoAdapter] Socket.IO Redis adapter connected
+[Nest] 2108  - 09/18/2026, 8:24:41 AM     LOG [RedisIoAdapter] Socket.IO Redis adapter connected
+[Nest] 2108  - 09/18/2026, 8:24:41 AM     LOG [RedisIoAdapter] Redis adapter recovered. Cross-instance realtime delivery restored.
+C:\Users\angub\AppData\Local\Temp\sugat-pilot-validation\apps\api:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @sugat/api@0.1.0 test: `jest --runInBand`
+Exit status 1
+FAIL src/common/private-document-storage.service.spec.ts
+  ● PrivateDocumentStorageService › validates content signatures, uses non-guessable names, and stores private files
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 384
+    Received: 438
+
+       6 |
+       7 | describe('PrivateDocumentStorageService',()=>{let root:string;beforeEach(async()=>{root=await mkdtemp(join(tmpdir(),'sugat-private-'));process.env.DRIVER_DOCUMENT_STORAGE_DIR=root});afterEach(async()=>{delete process.env.DRIVER_DOCUMENT_STORAGE_DIR;await rm(root,{recursive:true,force:true})});
+    >  8 |  it('validates content signatures, uses non-guessable names, and stores private files',async()=>{const service=new PrivateDocumentStorageService();const saved=await service.store({buffer:Buffer.from([0xff,0xd8,0xff,1]),mimetype:'image/jpeg',size:4});expect(saved.storageKey).toMatch(/^[a-f0-9]{48}\.jpg$/);expect((await stat(join(root,saved.storageKey))).mode&0o777).toBe(0o600);await expect(service.read(saved.storageKey)).resolves.toEqual(Buffer.from([0xff,0xd8,0xff,1]))});
+         |                                                                                                                                                                                                                                                                                                                                                                                ^
+       9 |  it('rejects a spoofed MIME type',async()=>{const service=new PrivateDocumentStorageService();await expect(service.store({buffer:Buffer.from('not an image'),mimetype:'image/jpeg',size:12})).rejects.toBeInstanceOf(BadRequestException)});
+      10 |  it('rejects oversized and malformed buffers before writing',async()=>{const service=new PrivateDocumentStorageService();const oversized=Buffer.alloc(5*1024*1024+1);oversized.set([0xff,0xd8,0xff]);await expect(service.store({buffer:oversized,mimetype:'image/jpeg',size:oversized.length})).rejects.toBeInstanceOf(BadRequestException);await expect(service.store({buffer:Buffer.from([0xff,0xd8,0xff]),mimetype:'image/jpeg',size:2})).rejects.toBeInstanceOf(BadRequestException)});
+      11 | });
+
+      at Object.<anonymous> (common/private-document-storage.service.spec.ts:8:368)
+
+PASS src/common/database-utc.spec.ts
+PASS src/modules/verification/verification.controller.spec.ts
+PASS src/modules/trips/trips.service.spec.ts
+PASS src/modules/auth/auth.service.spec.ts
+PASS src/modules/auth/driver-device.spec.ts
+PASS src/modules/auth/auth.controller.spec.ts
+PASS src/modules/admin/admin.service.spec.ts
+PASS src/modules/live/live.gateway.spec.ts
+[Nest] 2108  - 09/18/2026, 8:24:41 AM   ERROR [RedisIoAdapter] Redis adapter unavailable (publisher error). Cross-instance realtime delivery temporarily degraded; API remains operational. Error.
+[Nest] 2108  - 09/18/2026, 8:24:41 AM   ERROR [RedisIoAdapter] Redis adapter unavailable (publisher error). Cross-instance realtime delivery temporarily degraded; API remains operational. Error.
+[Nest] 2108  - 09/18/2026, 8:24:41 AM   ERROR [RedisIoAdapter] Redis adapter unavailable (initial connection). Cross-instance realtime delivery temporarily degraded; API remains operational. Error.
+PASS src/common/redis-io.adapter.spec.ts
+PASS src/modules/trips/pilot-operations.spec.ts
+PASS src/common/auth.spec.ts
+PASS src/modules/live/eta.service.spec.ts
+PASS src/modules/admin/driver-governance.spec.ts
+PASS src/modules/verification/verification.service.spec.ts
+PASS src/modules/live/live.service.spec.ts
+PASS src/common/driver-compliance.service.spec.ts
+PASS src/common/trip-lifecycle.service.spec.ts
+PASS src/imports/leyte-stops.importer.spec.ts
+PASS src/common/live-policy.spec.ts
+
+Test Suites: 1 failed, 19 passed, 20 total
+Tests:       1 failed, 143 passed, 144 total
+Snapshots:   0 total
+Time:        16.871 s, estimated 19 s
+Ran all test suites.

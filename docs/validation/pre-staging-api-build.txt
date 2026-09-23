@@ -1,0 +1,4 @@
+
+> @sugat/api@0.1.0 build C:\Users\angub\AppData\Local\Temp\sugat-pilot-validation\apps\api
+> nest build
+

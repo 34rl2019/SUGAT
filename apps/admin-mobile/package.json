@@ -1,6 +1,6 @@
 {
   "name":"@sugat/admin-mobile","version":"0.1.0","private":true,"main":"index.ts",
   "scripts":{"start":"expo start","android":"expo run:android --device","typecheck":"tsc --noEmit","lint":"tsc --noEmit","doctor":"expo-doctor","export:android":"expo export --platform android","build:android:development":"npx eas-cli@latest build --platform android --profile development","build:android:preview":"npx eas-cli@latest build --platform android --profile preview","build:android:production":"npx eas-cli@latest build --platform android --profile production"},
-  "dependencies":{"@babel/runtime":"^7.25.0","@react-native-community/netinfo":"11.4.1","@sugat/shared-types":"workspace:*","@sugat/theme":"workspace:*","expo":"~52.0.47","expo-secure-store":"~14.0.1","expo-status-bar":"~2.0.1","react":"18.3.1","react-native":"0.76.9","react-native-maps":"1.18.0","react-native-safe-area-context":"4.12.0","socket.io-client":"^4.8.1"},
+  "dependencies":{"@babel/runtime":"^7.25.0","@react-native-community/netinfo":"11.4.1","@sugat/shared-types":"workspace:*","@sugat/theme":"workspace:*","expo":"~52.0.47","expo-asset":"~11.0.5","expo-build-properties":"~0.13.3","expo-secure-store":"~14.0.1","expo-status-bar":"~2.0.1","react":"18.3.1","react-native":"0.76.9","react-native-maps":"1.18.0","react-native-safe-area-context":"4.12.0","socket.io-client":"^4.8.1"},
   "devDependencies":{"@types/react":"~18.3.12","expo-doctor":"^1.13.1","typescript":"^5.7.3"}
 }

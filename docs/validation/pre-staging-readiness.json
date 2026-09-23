@@ -1,0 +1,10 @@
+[
+    {
+        "status":  "ready",
+        "port":  53000
+    },
+    {
+        "status":  "ready",
+        "port":  53001
+    }
+]

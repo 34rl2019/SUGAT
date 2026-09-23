@@ -16,10 +16,14 @@ SUGAT is a free community platform that makes legitimate long-distance buses and
 
 The driver remains a native mobile app because reliable foreground-service/background GPS cannot be guaranteed by an ordinary browser. The responsive Admin Web consumes the protected operational API.
 
+## Engineering standards
+
+Permanent language, UI, data-integrity, development-workflow, production-safety, and database-safety conventions are documented in [docs/ENGINEERING_STANDARDS.md](docs/ENGINEERING_STANDARDS.md). In summary: production UI is English-only; development flows from local work through GitHub to safe VPS deployment; the VPS is not the normal development workspace; production UI never fabricates transportation data; production configuration is protected; and destructive database commands are prohibited.
+
 ## Core workflow
 
 1. Admin signs in and creates a driver, assigned vehicle, stops, ordered route, and one-time schedule.
-2. Schedule creation creates a `READY` trip after checking driver/vehicle assignment conflicts.
+2. Schedule creation stores an absolute timestamp and creates `SCHEDULED` trips outside the readiness window. Trips become `READY` 60 minutes before departure and missed unstarted trips are cancelled 30 minutes after departure.
 3. Driver signs in, retrieves `GET /api/v1/driver/assignment`, and starts only that assigned trip.
 4. Android location collection queues idempotent events locally and syncs them to the active trip.
 5. Public users call `/api/v1/public/stops`, search by ordered stop IDs, and subscribe to the selected trip's Socket.IO room.
@@ -79,11 +83,15 @@ No booking, passenger identity, payments, tickets, chat, ratings, operator porta
 
 The isolated Hostinger/Ubuntu VPS runbook, PM2 process definition, Nginx sites, PostgreSQL/PostGIS setup, Redis isolation, HTTPS, safe update sequence, and verification commands are in [deploy/DEPLOYMENT.md](deploy/DEPLOYMENT.md).
 
+## Driver Mobile builds
+
+Driver Mobile now has deterministic application identity, profile-specific API safety, EAS profiles, background-location permissions, and an executable physical-device checklist. See [apps/driver-mobile/RELEASE.md](apps/driver-mobile/RELEASE.md) for development, preview, production, signing, versioning, and Android field-test instructions.
+
 ## Driver iPhone development build
 
 `apps/driver-mobile` is an Expo SDK 52 application prepared for EAS cloud builds. A Mac is not required for EAS Build. Expo Go cannot test iOS background location; use the custom development build.
 
-Before building, choose an iOS bundle identifier owned by you or your organization and create `apps/driver-mobile/.env` from its `.env.example`:
+The committed iOS bundle identifier is `online.sugata.driver`. Create `apps/driver-mobile/.env` from its `.env.example` for local development:
 
 ```bash
 cd apps/driver-mobile
@@ -92,7 +100,6 @@ cp .env.example .env
 
 Set:
 
-- `SUGAT_IOS_BUNDLE_ID` to your permanent reverse-domain identifier. Do not ship the example value.
 - `EXPO_PUBLIC_API_URL` to an HTTPS API reachable by the iPhone, including `/api/v1`. `localhost` on the iPhone is the iPhone itself, not this laptop.
 
 For same-network development, an address such as `http://192.168.1.50:3000/api/v1` can be used temporarily if iOS transport policy permits the development build, but HTTPS through a tunnel or deployed test API is recommended. The backend must listen on `0.0.0.0`, and firewall access must be allowed.
@@ -111,8 +118,7 @@ npx eas-cli@latest build --platform ios --profile development
 Open the EAS installation link on the registered iPhone. A paid Apple Developer Program membership is required for ad hoc installation on a physical iPhone from a non-Mac machine. After installation, start Metro when using the development profile:
 
 ```bash
-EXPO_PUBLIC_API_URL=https://your-api.example/api/v1 \
-SUGAT_IOS_BUNDLE_ID=your.permanent.bundle.id \
+EXPO_PUBLIC_APP_ENV=development EXPO_PUBLIC_API_URL=https://your-api.example/api/v1 \
 npx expo start --dev-client --tunnel
 ```
 
@@ -122,10 +128,10 @@ On iPhone, grant location access and select **Always** in Settings when prompted
 
 Android is the primary field-test platform. The Expo configuration generates `ACCESS_BACKGROUND_LOCATION`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION`, and `POST_NOTIFICATIONS`. SUGAT displays a persistent foreground-service notification while an active trip is tracked.
 
-Create `apps/driver-mobile/.env` and set an Android package name you control:
+The committed Android package is `online.sugata.driver`. Local physical-device development may override only the public API configuration:
 
 ```dotenv
-SUGAT_ANDROID_PACKAGE=ph.yourorganization.sugat.driver
+EXPO_PUBLIC_APP_ENV=development
 EXPO_PUBLIC_API_URL=https://your-api.example/api/v1
 SUGAT_ALLOW_HTTP=false
 ```
@@ -141,7 +147,7 @@ npx eas-cli@latest build:configure
 npx eas-cli@latest build --platform android --profile preview
 ```
 
-Set the three build environment values in the EAS project before building. When the build finishes, open its installation URL on the Android phone, allow installation from that browser when prompted, and install the APK. The `preview` profile is standalone and does not need Metro.
+The preview profile already commits its non-secret API environment values. When the build finishes, open its installation URL on the Android phone, allow installation from that browser when prompted, and install the APK. The `preview` profile is standalone and does not need Metro.
 
 For a development-client APK instead:
 

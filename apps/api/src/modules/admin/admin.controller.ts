@@ -1,24 +1,25 @@
 import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { AccountStatus, Role, VehicleType } from '@prisma/client';
-import { IsArray, IsBoolean, IsDateString, IsEmail, IsEnum, IsInt, IsNumber, IsOptional, IsString, IsUUID, Max, Min, MinLength, ValidateIf, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, ArrayUnique, IsArray, IsBoolean, IsDateString, IsEmail, IsEnum, IsInt, IsNumber, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength, ValidateIf, ValidateNested } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { AuthUser, CurrentUser, JwtGuard, Roles } from '../../common/auth';
 import { AdminService } from './admin.service';
 
 class DriverDto {
-  @Transform(({ value }) => typeof value === 'string' ? value.trim().toLowerCase() : value) @IsEmail() email!: string; @MinLength(10) password!: string;
+  @Transform(({ value }) => typeof value === 'string' ? value.trim().toLowerCase() : value) @IsEmail() email!: string; @MinLength(12) @MaxLength(128) password!: string;
   @IsString() firstName!: string; @IsOptional() @IsString() middleName?: string; @IsString() lastName!: string;
   @IsOptional() @IsString() phone?: string; @IsOptional() @IsString() photoUrl?: string;
   @IsOptional() @IsString() licenseNumber?: string; @IsOptional() @IsDateString() licenseExpiresAt?: string;
 }
 class UpdateDriverDto {
-  @IsOptional() @Transform(({ value }) => typeof value === 'string' ? value.trim().toLowerCase() : value) @IsEmail() email?: string; @IsOptional() @MinLength(10) password?: string;
+  @IsOptional() @Transform(({ value }) => typeof value === 'string' ? value.trim().toLowerCase() : value) @IsEmail() email?: string; @IsOptional() @MinLength(12) @MaxLength(128) password?: string;
   @IsOptional() @IsString() firstName?: string; @IsOptional() @IsString() middleName?: string; @IsOptional() @IsString() lastName?: string;
   @IsOptional() @IsString() phone?: string; @IsOptional() @IsString() photoUrl?: string;
   @IsOptional() @IsString() licenseNumber?: string; @IsOptional() @IsDateString() licenseExpiresAt?: string;
   @IsOptional() @IsEnum(AccountStatus) accountStatus?: AccountStatus;
 }
 class VehicleDto {
+  @IsOptional() @IsString() @MaxLength(100) conductionSticker?: string;
   @IsEnum(VehicleType) type!: VehicleType; @IsString() plateNumber!: string; @IsString() displayName!: string;
   @IsOptional() @IsString() bodyNumber?: string; @IsOptional() @IsString() brand?: string; @IsOptional() @IsString() model?: string;
   @IsOptional() @IsInt() @Min(1) capacity?: number;
@@ -34,14 +35,16 @@ class RouteStopDto {
   @IsOptional() @IsInt() @Min(0) minutesFromPrevious?: number;
 }
 class RouteDto { @IsString() name!: string; @IsString() direction!: string; @IsArray() @ValidateNested({ each: true }) @Type(() => RouteStopDto) stops!: RouteStopDto[]; }
-class ScheduleDto { @IsUUID() routeId!: string; @IsUUID() driverId!: string; @IsUUID() vehicleId!: string; @IsDateString() departureAt!: string; }
 class ActiveDto { @IsBoolean() active!: boolean; }
+class DriverRoutesDto { @IsArray() @ArrayMaxSize(100) @ArrayUnique() @IsUUID('all', { each: true }) routeIds!: string[]; }
 
 @UseGuards(JwtGuard) @Roles(Role.ADMIN) @Controller('admin')
 export class AdminController {
   constructor(private admin: AdminService) {}
   @Get('dashboard') dashboard() { return this.admin.dashboard(); }
   @Get('drivers') drivers() { return this.admin.drivers(); }
+  @Patch('drivers/:id/routes') driverRoutes(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() d: DriverRoutesDto) { return this.admin.authorizeRoutes(u.sub, id, d.routeIds); }
+  @Post('drivers/:id/device/reset') resetDevice(@CurrentUser() u: AuthUser, @Param('id') id: string) { return this.admin.resetDevice(u.sub, id); }
   @Post('drivers') createDriver(@CurrentUser() u: AuthUser, @Body() d: DriverDto) { return this.admin.createDriver(u.sub, d); }
   @Patch('drivers/:id') updateDriver(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() d: UpdateDriverDto) { return this.admin.updateDriver(u.sub, id, d); }
   @Patch('drivers/:id/status') driverStatus(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() d: ActiveDto) { return this.admin.driverStatus(u.sub, id, d.active); }
@@ -58,7 +61,6 @@ export class AdminController {
   @Patch('routes/:id') updateRoute(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() d: RouteDto) { return this.admin.updateRoute(u.sub, id, d); }
   @Patch('routes/:id/status') routeStatus(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() d: ActiveDto) { return this.admin.routeStatus(u.sub, id, d.active); }
   @Get('schedules') schedules() { return this.admin.schedules(); }
-  @Post('schedules') schedule(@CurrentUser() u: AuthUser, @Body() d: ScheduleDto) { return this.admin.createSchedule(u.sub, d); }
   @Post('schedules/:id/cancel') cancelSchedule(@CurrentUser() u: AuthUser, @Param('id') id: string) { return this.admin.cancelSchedule(u.sub, id); }
   @Get('live') live() { return this.admin.live(); }
 }

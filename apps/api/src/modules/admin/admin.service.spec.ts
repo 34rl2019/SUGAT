@@ -11,11 +11,13 @@ describe('AdminService management workflows', () => {
       route: { create: jest.fn().mockResolvedValue({ id: 'route-1' }) },
       auditLog: { create: jest.fn().mockResolvedValue({}) },
       schedule: { findUnique: jest.fn(), update: jest.fn() },
-      trip: { update: jest.fn() },
+      trip: { updateMany: jest.fn().mockResolvedValue({count:1}) },
+      tripEvent:{create:jest.fn()},
       $transaction: jest.fn(async (callback: any) => callback(db)),
       ...overrides,
     };
-    return { db, admin: new AdminService(db, new DriverComplianceService()) };
+    const lifecycle:any={reconcile:jest.fn(),now:()=>new Date(),initialStatus:()=> 'SCHEDULED',timing:(at:Date)=>({readyAt:at,startDeadlineAt:at})};
+    return { db, admin: new AdminService(db, new DriverComplianceService(), lifecycle) };
   }
 
   it('creates a route only with contiguous unique ordered stops', async () => {
@@ -40,7 +42,7 @@ describe('AdminService management workflows', () => {
     db.schedule.findUnique.mockResolvedValue({ id: 'schedule-1', active: true, trip: { id: 'trip-1', status: 'READY' } });
     db.schedule.update.mockResolvedValue({ id: 'schedule-1', active: false });
     await admin.cancelSchedule('admin-1', 'schedule-1');
-    expect(db.trip.update).toHaveBeenCalledWith({ where: { id: 'trip-1' }, data: expect.objectContaining({ status: 'CANCELLED' }) });
+    expect(db.trip.updateMany).toHaveBeenCalledWith({ where: { id: 'trip-1', status: { in: ['SCHEDULED','READY'] } }, data: expect.objectContaining({ status: 'CANCELLED' }) });
     expect(db.schedule.update).toHaveBeenCalledWith(expect.objectContaining({ data: { active: false } }));
   });
 
@@ -111,4 +113,30 @@ describe('AdminService management workflows', () => {
     await admin.updateDriver('admin-1','driver-1',{licenseNumber:'NEW-2'});
     expect(driverModel.update).toHaveBeenCalledWith(expect.objectContaining({data:expect.objectContaining({identityVerificationStatus:'PENDING_REVERIFICATION',licenseVerificationStatus:'PENDING_REVERIFICATION'})}));
   });
+
+  it('selects only operational user fields for the admin live response', async () => {
+    const findMany=jest.fn().mockResolvedValue([]);
+    const {admin}=service({trip:{findMany}});
+    await admin.live();
+    const userSelect=findMany.mock.calls[0][0].include.driver.include.user.select;
+    expect(userSelect).toEqual({id:true,email:true,phone:true,role:true,accountStatus:true});
+    expect(userSelect).not.toHaveProperty('passwordHash');
+    expect(userSelect).not.toHaveProperty('mustChangePassword');
+    expect(userSelect).not.toHaveProperty('sessions');
+  });
+
+  it('does not serialize a password hash in an admin live result', async () => {
+    const trip={id:'trip-1',lastPassedSequence:0,currentLocation:null,vehicle:{id:'vehicle-1'},driver:{id:'driver-1',firstName:'Safe',lastName:'Driver',licenseExpiresAt:null,identityVerificationStatus:'UNVERIFIED',licenseVerificationStatus:'UNVERIFIED',active:true,user:{id:'user-1',email:'driver@example.test',phone:null,role:'DRIVER',accountStatus:'ACTIVE'}},route:{stops:[]}};
+    const {admin}=service({trip:{findMany:jest.fn().mockResolvedValue([trip])}});
+    const response=await admin.live();
+    expect(JSON.stringify(response)).not.toContain('passwordHash');
+    expect(response[0].driver.user).toEqual(trip.driver.user);
+  });
+  it('shows the operating segment and its next stop in Admin live data',async()=>{
+    const stops=['a','b','c','d'].map((stopId,index)=>({stopId,sequence:index+1,stop:{id:stopId,name:stopId}}));
+    const db:any={trip:{findMany:jest.fn().mockResolvedValue([{id:'trip',lastPassedSequence:0,route:{stops},events:[{metadata:{startStopId:'b',destinationStopId:'c'}}],driver:{},currentLocation:null}])}};
+    const admin=new AdminService(db,{evaluate:()=>({eligible:true})} as any,{} as any);
+    const [trip]=await admin.live();expect(trip.route.stops.map(stop=>stop.stopId)).toEqual(['b','c']);expect(trip.nextStop?.id).toBe('b');
+  });
+
 });

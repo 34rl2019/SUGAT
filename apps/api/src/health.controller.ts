@@ -4,5 +4,5 @@ import { PrismaService } from './common/prisma.service';
 export class HealthController {
   constructor(private db: PrismaService) {}
   @Get('health') health() { return { status: 'ok', time: new Date().toISOString() }; }
-  @Get('readiness') async readiness() { await this.db.$queryRaw`SELECT 1`; return { status: 'ready' }; }
+  @Get('readiness') async readiness() { await this.db.assertUtc(); return { status: 'ready' }; }
 }

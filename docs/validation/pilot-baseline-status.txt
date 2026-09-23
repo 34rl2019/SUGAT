@@ -1,0 +1,187 @@
+﻿ M .env.example
+ M .gitignore
+ M README.md
+ M apps/admin-mobile/.env.example
+ M apps/admin-mobile/App.tsx
+ M apps/admin-mobile/app.config.ts
+ M apps/admin-mobile/eas.json
+ M apps/admin-mobile/package.json
+ M apps/admin-mobile/src/api.ts
+ M apps/admin-web/index.html
+ M apps/admin-web/package.json
+ M apps/admin-web/src/brand.css
+ M apps/admin-web/src/main.tsx
+ M apps/admin-web/src/style.css
+ M apps/admin-web/tsconfig.tsbuildinfo
+ M apps/api/prisma/schema.prisma
+ M apps/api/prisma/seed.ts
+ M apps/api/scripts/e2e-final-release-gate.ts
+ M apps/api/src/app.module.ts
+ M apps/api/src/common/auth.ts
+ M apps/api/src/common/live-policy.spec.ts
+ M apps/api/src/common/live-policy.ts
+ M apps/api/src/common/private-document-storage.service.spec.ts
+ M apps/api/src/modules/admin/admin.controller.ts
+ M apps/api/src/modules/admin/admin.service.spec.ts
+ M apps/api/src/modules/admin/admin.service.ts
+ M apps/api/src/modules/auth/auth.controller.ts
+ M apps/api/src/modules/auth/auth.service.ts
+ M apps/api/src/modules/live/eta.service.ts
+ M apps/api/src/modules/live/live.controller.ts
+ M apps/api/src/modules/live/live.gateway.spec.ts
+ M apps/api/src/modules/live/live.gateway.ts
+ M apps/api/src/modules/live/live.service.spec.ts
+ M apps/api/src/modules/live/live.service.ts
+ M apps/api/src/modules/trips/trips.controller.ts
+ M apps/api/src/modules/trips/trips.service.spec.ts
+ M apps/api/src/modules/trips/trips.service.ts
+ M apps/api/src/modules/verification/verification.controller.ts
+ M apps/api/src/modules/verification/verification.service.spec.ts
+ M apps/driver-mobile/.env.example
+ M apps/driver-mobile/App.tsx
+ M apps/driver-mobile/app.config.ts
+ M apps/driver-mobile/eas.json
+ M apps/driver-mobile/package.json
+ M apps/driver-mobile/src/api/client.ts
+ M apps/driver-mobile/src/api/trips.ts
+ M apps/driver-mobile/src/auth/session.ts
+ M apps/driver-mobile/src/location/tracker.ts
+ M apps/passenger-mobile/.env.example
+ M apps/passenger-mobile/App.tsx
+ M apps/passenger-mobile/app.config.ts
+ M apps/passenger-mobile/eas.json
+ M apps/passenger-mobile/package.json
+ M apps/passenger-mobile/src/api.ts
+ M apps/passenger-mobile/src/live.ts
+ M apps/passenger-mobile/src/types.ts
+ M apps/passenger-web/index.html
+ M apps/passenger-web/src/brand.css
+ M apps/passenger-web/src/main.tsx
+ M apps/passenger-web/tsconfig.tsbuildinfo
+ M deploy/DEPLOYMENT.md
+ M deploy/nginx/sugat.conf
+ M package.json
+ M packages/shared-types/src/index.ts
+ M packages/theme/BRAND_ASSETS.md
+ M packages/theme/src/index.ts
+ M packages/theme/src/web.css
+ M pnpm-lock.yaml
+ M scripts/e2e-final-release-gate.sh
+?? AGENTS.md
+?? apps/admin-mobile/android/.gitignore
+?? apps/admin-mobile/android/app/build.gradle
+?? apps/admin-mobile/android/app/debug.keystore
+?? apps/admin-mobile/android/app/proguard-rules.pro
+?? apps/admin-mobile/android/app/src/debug/AndroidManifest.xml
+?? apps/admin-mobile/android/app/src/main/AndroidManifest.xml
+?? apps/admin-mobile/android/app/src/main/java/ph/sugata/admin/MainActivity.kt
+?? apps/admin-mobile/android/app/src/main/java/ph/sugata/admin/MainApplication.kt
+?? apps/admin-mobile/android/app/src/main/res/drawable-hdpi/splashscreen_logo.png
+?? apps/admin-mobile/android/app/src/main/res/drawable-mdpi/splashscreen_logo.png
+?? apps/admin-mobile/android/app/src/main/res/drawable-xhdpi/splashscreen_logo.png
+?? apps/admin-mobile/android/app/src/main/res/drawable-xxhdpi/splashscreen_logo.png
+?? apps/admin-mobile/android/app/src/main/res/drawable-xxxhdpi/splashscreen_logo.png
+?? apps/admin-mobile/android/app/src/main/res/drawable/ic_launcher_background.xml
+?? apps/admin-mobile/android/app/src/main/res/drawable/rn_edit_text_material.xml
+?? apps/admin-mobile/android/app/src/main/res/mipmap-hdpi/ic_launcher.webp
+?? apps/admin-mobile/android/app/src/main/res/mipmap-hdpi/ic_launcher_round.webp
+?? apps/admin-mobile/android/app/src/main/res/mipmap-mdpi/ic_launcher.webp
+?? apps/admin-mobile/android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp
+?? apps/admin-mobile/android/app/src/main/res/mipmap-xhdpi/ic_launcher.webp
+?? apps/admin-mobile/android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.webp
+?? apps/admin-mobile/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.webp
+?? apps/admin-mobile/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.webp
+?? apps/admin-mobile/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp
+?? apps/admin-mobile/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp
+?? apps/admin-mobile/android/app/src/main/res/values-night/colors.xml
+?? apps/admin-mobile/android/app/src/main/res/values/colors.xml
+?? apps/admin-mobile/android/app/src/main/res/values/strings.xml
+?? apps/admin-mobile/android/app/src/main/res/values/styles.xml
+?? apps/admin-mobile/android/build.gradle
+?? apps/admin-mobile/android/gradle.properties
+?? apps/admin-mobile/android/gradle/wrapper/gradle-wrapper.jar
+?? apps/admin-mobile/android/gradle/wrapper/gradle-wrapper.properties
+?? apps/admin-mobile/android/gradlew
+?? apps/admin-mobile/android/gradlew.bat
+?? apps/admin-mobile/android/settings.gradle
+?? apps/admin-mobile/react-native.config.js
+?? apps/admin-web/src/schedule-time.test.ts
+?? apps/admin-web/src/schedule-time.ts
+?? apps/api/prisma/migrations/202608290001_security_session_hardening/migration.sql
+?? apps/api/prisma/migrations/202608290002_gps_location_expand/migration.sql
+?? apps/api/prisma/migrations/202609180001_pilot_operations/migration.sql
+?? apps/api/src/common/auth.spec.ts
+?? apps/api/src/common/device-credential.ts
+?? apps/api/src/common/trip-lifecycle.module.ts
+?? apps/api/src/common/trip-lifecycle.service.spec.ts
+?? apps/api/src/common/trip-lifecycle.service.ts
+?? apps/api/src/modules/admin/driver-governance.spec.ts
+?? apps/api/src/modules/auth/auth.controller.spec.ts
+?? apps/api/src/modules/auth/auth.service.spec.ts
+?? apps/api/src/modules/auth/driver-device.spec.ts
+?? apps/api/src/modules/live/eta.service.spec.ts
+?? apps/api/src/modules/trips/pilot-operations.spec.ts
+?? apps/driver-mobile/RELEASE.md
+?? apps/driver-mobile/react-native.config.js
+?? apps/driver-mobile/src/location/queue-policy.d.ts
+?? apps/driver-mobile/src/location/queue-policy.js
+?? apps/driver-mobile/src/location/queue-policy.test.mjs
+?? apps/driver-mobile/src/location/tracking-lifecycle.d.ts
+?? apps/driver-mobile/src/location/tracking-lifecycle.js
+?? apps/driver-mobile/src/location/tracking-lifecycle.test.mjs
+?? apps/passenger-mobile/android/.gitignore
+?? apps/passenger-mobile/android/app/build.gradle
+?? apps/passenger-mobile/android/app/debug.keystore
+?? apps/passenger-mobile/android/app/proguard-rules.pro
+?? apps/passenger-mobile/android/app/src/debug/AndroidManifest.xml
+?? apps/passenger-mobile/android/app/src/main/AndroidManifest.xml
+?? apps/passenger-mobile/android/app/src/main/java/ph/sugata/passenger/MainActivity.kt
+?? apps/passenger-mobile/android/app/src/main/java/ph/sugata/passenger/MainApplication.kt
+?? apps/passenger-mobile/android/app/src/main/res/drawable-hdpi/splashscreen_logo.png
+?? apps/passenger-mobile/android/app/src/main/res/drawable-mdpi/splashscreen_logo.png
+?? apps/passenger-mobile/android/app/src/main/res/drawable-xhdpi/splashscreen_logo.png
+?? apps/passenger-mobile/android/app/src/main/res/drawable-xxhdpi/splashscreen_logo.png
+?? apps/passenger-mobile/android/app/src/main/res/drawable-xxxhdpi/splashscreen_logo.png
+?? apps/passenger-mobile/android/app/src/main/res/drawable/ic_launcher_background.xml
+?? apps/passenger-mobile/android/app/src/main/res/drawable/rn_edit_text_material.xml
+?? apps/passenger-mobile/android/app/src/main/res/mipmap-hdpi/ic_launcher.webp
+?? apps/passenger-mobile/android/app/src/main/res/mipmap-hdpi/ic_launcher_round.webp
+?? apps/passenger-mobile/android/app/src/main/res/mipmap-mdpi/ic_launcher.webp
+?? apps/passenger-mobile/android/app/src/main/res/mipmap-mdpi/ic_launcher_round.webp
+?? apps/passenger-mobile/android/app/src/main/res/mipmap-xhdpi/ic_launcher.webp
+?? apps/passenger-mobile/android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.webp
+?? apps/passenger-mobile/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.webp
+?? apps/passenger-mobile/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.webp
+?? apps/passenger-mobile/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.webp
+?? apps/passenger-mobile/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp
+?? apps/passenger-mobile/android/app/src/main/res/values-night/colors.xml
+?? apps/passenger-mobile/android/app/src/main/res/values/colors.xml
+?? apps/passenger-mobile/android/app/src/main/res/values/strings.xml
+?? apps/passenger-mobile/android/app/src/main/res/values/styles.xml
+?? apps/passenger-mobile/android/build.gradle
+?? apps/passenger-mobile/android/gradle.properties
+?? apps/passenger-mobile/android/gradle/wrapper/gradle-wrapper.jar
+?? apps/passenger-mobile/android/gradle/wrapper/gradle-wrapper.properties
+?? apps/passenger-mobile/android/gradlew
+?? apps/passenger-mobile/android/gradlew.bat
+?? apps/passenger-mobile/android/settings.gradle
+?? apps/passenger-mobile/react-native.config.js
+?? apps/passenger-mobile/src/VehicleMap.tsx
+?? apps/passenger-web/scripts/pilot-browser-smoke.cjs
+?? apps/passenger-web/src/VehicleMap.tsx
+?? apps/passenger-web/src/freshness.test.ts
+?? apps/passenger-web/src/overview.test.ts
+?? apps/passenger-web/src/pilot.css
+?? deploy/migrations/deferred/202608290003_gps_history_contract.sql
+?? docs/ENGINEERING_STANDARDS.md
+?? docs/MOBILE_RELEASE_POLICY.md
+?? docs/PILOT_OPERATIONS.md
+?? docs/PILOT_VALIDATION.md
+?? docs/ui/SUGAT_CURRENT_UI_AUDIT.md
+?? docs/ui/mockups/admin-mobile/05-admin-mobile-mockup.png
+?? docs/ui/mockups/admin-web/04-admin-web-mockup.png
+?? docs/ui/mockups/driver-mobile/03-driver-mobile-mockup.png
+?? docs/ui/mockups/passenger-mobile/02-passenger-mobile-mockup.png
+?? docs/ui/mockups/passenger-web/01-passenger-web-mockup.png
+?? docs/ui/sugat-current-codebase-ecosystem-board.png
+?? packages/shared-utils/src/passenger-tracking.ts

@@ -1,4 +1,5 @@
 node_modules
+node_modules.pilot-backup
 .env
 .env.e2e.local
 dist
@@ -10,3 +11,25 @@ apps/driver-mobile/android
 apps/driver-mobile/ios
 apps/*/dist/
 /var/private/
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Android/build artifacts
+*.apk
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+build/
+**/build/
+
+# Local backup files
+*.bak-*
+*.bak
+
+# Accidental shell/output files
+ername,
+ql "$DATABASE_URL" -c '
+tsc

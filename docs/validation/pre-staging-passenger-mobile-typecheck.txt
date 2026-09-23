@@ -1,0 +1,4 @@
+
+> @sugat/passenger-mobile@0.1.0 typecheck C:\Users\angub\AppData\Local\Temp\sugat-pilot-validation\apps\passenger-mobile
+> tsc --noEmit
+

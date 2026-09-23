@@ -1,0 +1,14 @@
+﻿[
+    {
+        "Path":  "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-post-validation\\postgresql.zip",
+        "Hash":  "5E8AFFFE67DAF949AEEB03B74951F1EC2324E1888F73FBD036AB0E567AB004D9"
+    },
+    {
+        "Path":  "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-post-validation\\postgis.zip",
+        "Hash":  "BDF95114C067B5D315AE63E9DCDC0700511D09F97759A803C895702A6EF267FF"
+    },
+    {
+        "Path":  "C:\\Users\\angub\\AppData\\Local\\Temp\\sugat-post-validation\\redis.zip",
+        "Hash":  "AA6D4206A08D1189DD7A57C78201540A53B12350E1AD09EE7CACA04120600656"
+    }
+]
