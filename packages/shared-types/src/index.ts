@@ -27,7 +27,11 @@ export interface PassengerLocation extends Coordinate { recordedAt: string; fres
 export interface PassengerRide {
   tripId: string; vehicleId: string; status: string;
   vehicle: { type: VehicleType; displayName: string; bodyNumber?: string | null };
-  route: { name: string; direction: string };
+  route: {
+    name: string;
+    direction: string;
+    stops: { sequence: number; stop: Stop }[];
+  };
   boardingStop: Stop; destinationStop: Stop; nextStop: Stop | null;
   distanceKm: number | null; boardingEta: PassengerEta; destinationEta: PassengerEta; remainingTripTime: PassengerEta;
   freshness: Freshness; freshnessPolicy: LocationFreshnessPolicy; lastUpdatedAt: string | null;

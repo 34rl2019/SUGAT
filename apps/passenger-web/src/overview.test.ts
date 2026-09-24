@@ -3,7 +3,10 @@ import { type PassengerRide, VEHICLE_VERIFICATION_NOTICE, occupancyLabel } from 
 import { ageRides, reconcileRides, trackOverview, updateRideLocation, updateRideOccupancy } from '../../../packages/shared-utils/src/passenger-tracking';
 
 const now=Date.parse('2026-09-18T12:00:00Z');
-const ride=(tripId:string):PassengerRide=>({tripId,vehicleId:'vehicle-'+tripId,status:'ACTIVE',vehicle:{type:'VAN',displayName:tripId},route:{name:'Test route',direction:'Outbound'},boardingStop:{id:'a',name:'A',latitude:10,longitude:124},destinationStop:{id:'b',name:'B',latitude:11,longitude:124},nextStop:null,distanceKm:1,boardingEta:{seconds:120,minutes:2,display:'Arriving soon',status:'AVAILABLE',reason:null},destinationEta:{seconds:300,minutes:5,display:'~5 min',status:'AVAILABLE',reason:null},remainingTripTime:{seconds:300,minutes:5,display:'~5 min',status:'AVAILABLE',reason:null},freshness:'LIVE',freshnessPolicy:{liveAfterSeconds:20,offlineAfterSeconds:600},lastUpdatedAt:new Date(now).toISOString(),location:{latitude:10,longitude:124,recordedAt:new Date(now).toISOString(),freshness:'LIVE'},occupancyStatus:null,occupancyUpdatedAt:null});
+const ride=(tripId:string):PassengerRide=>({tripId,vehicleId:'vehicle-'+tripId,status:'ACTIVE',vehicle:{type:'VAN',displayName:tripId},route:{name:'Test route',direction:'Outbound',stops:[
+  {sequence:1,stop:{id:'a',name:'A',latitude:10,longitude:124}},
+  {sequence:2,stop:{id:'b',name:'B',latitude:11,longitude:124}}
+]},boardingStop:{id:'a',name:'A',latitude:10,longitude:124},destinationStop:{id:'b',name:'B',latitude:11,longitude:124},nextStop:null,distanceKm:1,boardingEta:{seconds:120,minutes:2,display:'Arriving soon',status:'AVAILABLE',reason:null},destinationEta:{seconds:300,minutes:5,display:'~5 min',status:'AVAILABLE',reason:null},remainingTripTime:{seconds:300,minutes:5,display:'~5 min',status:'AVAILABLE',reason:null},freshness:'LIVE',freshnessPolicy:{liveAfterSeconds:20,offlineAfterSeconds:600},lastUpdatedAt:new Date(now).toISOString(),location:{latitude:10,longitude:124,recordedAt:new Date(now).toISOString(),freshness:'LIVE'},occupancyStatus:null,occupancyUpdatedAt:null});
 afterEach(()=>vi.useRealTimers());
 describe('passenger overview state used by Web and Mobile',()=>{
  it('does not publish an empty successful search while the initial HTTP response is pending',async()=>{

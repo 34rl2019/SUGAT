@@ -12,7 +12,8 @@ describe('public route-order search',()=>{
  it('only exposes passengers and detail stops inside the active segment',async()=>{
   const value={...trip([stop('A',1,11),stop('B',2,10.05),stop('C',3,9.5),stop('D',4,9)]),events:[{metadata:{startStopId:'B',destinationStopId:'C'}}]};
   const db:any={trip:{findMany:jest.fn().mockResolvedValue([value]),findFirst:jest.fn().mockResolvedValue(value)}};const service=new LiveService(db,new EtaService());
-  expect(await service.search('A','C')).toEqual([]);expect(await service.search('B','D')).toEqual([]);expect(await service.search('B','C')).toHaveLength(1);
+  expect(await service.search('A','C')).toEqual([]);expect(await service.search('B','D')).toEqual([]);
+  const matches=await service.search('B','C');expect(matches).toHaveLength(1);expect(matches[0].route.stops.map(s=>s.stop.id)).toEqual(['B','C']);
   const detail=await service.getTrip('trip','B','C');expect(detail.route.stops.map(s=>s.stopId)).toEqual(['B','C']);expect(detail.nextStop?.id).toBe('B');
   await expect(service.getTrip('trip','A','C')).rejects.toMatchObject({status:400});
  });

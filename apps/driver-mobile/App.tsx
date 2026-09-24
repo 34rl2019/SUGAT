@@ -103,6 +103,11 @@ export default function App() {
   ] = useState('');
 
   const [
+    selectedRouteId,
+    setSelectedRouteId,
+  ] = useState('');
+
+  const [
     startSearch,
     setStartSearch,
   ] = useState('');
@@ -433,7 +438,7 @@ export default function App() {
         )
       : [];
 
-  const selectedRoute =
+  const matchingRoutes =
     selectedStartStopId &&
     selectedDestinationStopId &&
     operations
@@ -465,8 +470,57 @@ export default function App() {
             (a, b) =>
               a.name.localeCompare(b.name) ||
               a.id.localeCompare(b.id),
-          )[0] ?? null
-      : null;
+          )
+      : [];
+
+  const selectedRoute =
+    matchingRoutes.length === 1
+      ? matchingRoutes[0]
+      : matchingRoutes.find(
+          route => route.id === selectedRouteId,
+        ) ?? null;
+
+  const routeViaStops = (route: Operations['routes'][number]) => {
+    const start = route.stops.find(
+      routeStop =>
+        routeStop.stopId === selectedStartStopId,
+    );
+
+    const destination = route.stops.find(
+      routeStop =>
+        routeStop.stopId ===
+        selectedDestinationStopId,
+    );
+
+    if (
+      !start ||
+      !destination ||
+      start.sequence >= destination.sequence
+    ) {
+      return [];
+    }
+
+    return route.stops
+      .filter(
+        routeStop =>
+          routeStop.sequence > start.sequence &&
+          routeStop.sequence < destination.sequence,
+      )
+      .sort(
+        (a, b) => a.sequence - b.sequence,
+      )
+      .map(routeStop =>
+        canonicalStops.find(
+          stop => stop.id === routeStop.stopId,
+        ),
+      )
+      .filter(
+        (
+          stop,
+        ): stop is (typeof canonicalStops)[number] =>
+          Boolean(stop),
+      );
+  };
 
   const normalizedStartSearch =
     startSearch.trim().toLowerCase();
@@ -656,6 +710,7 @@ export default function App() {
       setAssignment(null);
       setSelectedStartStopId('');
       setSelectedDestinationStopId('');
+      setSelectedRouteId('');
       setStartSearch('');
       setDestinationSearch('');
       setStartSearchFocused(false);
@@ -1210,6 +1265,7 @@ export default function App() {
                     setStartSearch(value);
                     setSelectedStartStopId('');
                     setSelectedDestinationStopId('');
+                    setSelectedRouteId('');
                     setDestinationSearch('');
                     setDestinationSearchFocused(
                       false,
@@ -1243,6 +1299,7 @@ export default function App() {
                             setSelectedDestinationStopId(
                               '',
                             );
+                            setSelectedRouteId('');
                             setDestinationSearch(
                               '',
                             );
@@ -1313,6 +1370,7 @@ export default function App() {
                     setSelectedDestinationStopId(
                       '',
                     );
+                    setSelectedRouteId('');
                   }}
                   placeholder={
                     selectedStartStopId
@@ -1345,6 +1403,7 @@ export default function App() {
                               setDestinationSearch(
                                 stop.name,
                               );
+                              setSelectedRouteId('');
                               setDestinationSearchFocused(
                                 false,
                               );
@@ -1397,6 +1456,61 @@ export default function App() {
                   </View>
                 ) : null}
 
+                {matchingRoutes.length > 1 &&
+                !selectedRoute ? (
+                  <View
+                    style={styles.routeResolved}
+                  >
+                    <Text style={styles.label}>
+                      SELECT OPERATING ROUTE
+                    </Text>
+
+                    {matchingRoutes.map(route => {
+                      const viaStops =
+                        routeViaStops(route);
+
+                      return (
+                        <Pressable
+                          key={route.id}
+                          onPress={() =>
+                            setSelectedRouteId(
+                              route.id,
+                            )
+                          }
+                          style={({ pressed }) => [
+                            styles.suggestionItem,
+                            pressed &&
+                              styles.suggestionPressed,
+                          ]}
+                        >
+                          <Text
+                            style={
+                              styles.suggestionName
+                            }
+                          >
+                            {route.name}
+                          </Text>
+
+                          <Text
+                            style={
+                              styles.suggestionMeta
+                            }
+                          >
+                            {viaStops.length
+                              ? `Via: ${viaStops
+                                  .map(
+                                    stop =>
+                                      stop.name,
+                                  )
+                                  .join(' → ')}`
+                              : 'Direct route'}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                ) : null}
+
                 {selectedRoute ? (
                   <View
                     style={styles.routeResolved}
@@ -1414,6 +1528,46 @@ export default function App() {
                     <Text style={styles.muted}>
                       {selectedRoute.direction}
                     </Text>
+
+                    <Text style={styles.routeViaLabel}>
+                      VIA
+                    </Text>
+
+                    <Text style={styles.routeVia}>
+                      {routeViaStops(
+                        selectedRoute,
+                      ).length
+                        ? routeViaStops(
+                            selectedRoute,
+                          )
+                            .map(
+                              stop => stop.name,
+                            )
+                            .join(' → ')
+                        : 'Direct route'}
+                    </Text>
+
+                    {matchingRoutes.length > 1 ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() =>
+                          setSelectedRouteId('')
+                        }
+                        style={({ pressed }) => [
+                          styles.changeRoute,
+                          pressed &&
+                            styles.suggestionPressed,
+                        ]}
+                      >
+                        <Text
+                          style={
+                            styles.changeRouteText
+                          }
+                        >
+                          CHANGE ROUTE
+                        </Text>
+                      </Pressable>
+                    ) : null}
                   </View>
                 ) : null}
               </View>
@@ -1784,6 +1938,35 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: '800',
     marginBottom: 4,
+  },
+
+  routeViaLabel: {
+    color: '#8FA4B8',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+    marginTop: 14,
+    marginBottom: 5,
+  },
+
+  routeVia: {
+    color: '#D8B45A',
+    fontSize: 14,
+    fontWeight: '800',
+    lineHeight: 20,
+  },
+
+  changeRoute: {
+    alignSelf: 'flex-start',
+    marginTop: 12,
+    paddingVertical: 6,
+  },
+
+  changeRouteText: {
+    color: '#D8B45A',
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1,
   },
 
   activeHeader: {

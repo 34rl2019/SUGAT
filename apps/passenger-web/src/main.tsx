@@ -17,6 +17,26 @@ const SOCKET = import.meta.env.VITE_SOCKET_URL ?? 'http://localhost:3000';
 type SubscriptionResult = { ok: boolean; subscribed?: boolean; code?: string; message?: string };
 const empty = 'No active trips found for this route.', error = 'Live data is currently unavailable. Please try again.';
 const stopLabel = (stop: Stop) => `${stop.province ?? 'Other'} — ${stop.cityMunicipality ?? stop.name} — ${stop.name}`;
+
+const routeEndpoints = (route: Result['route'] | Detail['route']) => {
+  const stops = route.stops.map(entry => entry.stop);
+  return {
+    start: stops[0] ?? null,
+    destination: stops[stops.length - 1] ?? null,
+    via: stops.slice(1, -1),
+  };
+};
+
+const routeTitle = (route: Result['route'] | Detail['route']) => {
+  const { start, destination } = routeEndpoints(route);
+  return start && destination
+    ? `${start.name} → ${destination.name}`
+    : route.name;
+};
+
+const routeVia = (route: Result['route'] | Detail['route']) =>
+  routeEndpoints(route).via.map(stop => stop.name).join(' → ');
+
 function Brand() { return <div className="text-brand"><strong>{SUGAT_BRAND_NAME}</strong><span>{SUGAT_BRAND_TAGLINE}</span></div>; }
 
 function StopPicker({ label, stops, selectedId, onSelect }: { label: string; stops: Stop[]; selectedId: string; onSelect: (id: string) => void }) {
@@ -83,7 +103,7 @@ function App() {
   const track=(result:Result)=>{setDetail(null);setSelected(result);setMessage('')};
   const search=()=>{if(!from||!to||from===to)return;setSelected(null);setDetail(null);setSearchContext({fromStopId:from,toStopId:to,version:Date.now()});setMessage('')};
   if(detail)return <main><header><button className="back" onClick={()=>{setSelected(null);setDetail(null)}}>← BACK TO RIDES</button><Brand/></header>
-    <section className="track"><h1>{detail.vehicle.displayName}</h1><p>{detail.route.name} · {detail.route.direction}</p>
+    <section className="track"><h1>{detail.vehicle.displayName}</h1><p>{routeTitle(detail.route)}</p>{routeVia(detail.route)&&<p><strong>Via:</strong> {routeVia(detail.route)}</p>}<p>{detail.route.direction}</p>
       {message&&<p role="status">{message}</p>}
       <VehicleMap vehicles={[{...detail,tripId:detail.id}]} stops={detail.route.stops.map(entry=>entry.stop)} onSelect={()=>{}}/>
       <section className="vehicle-identity" aria-label="Vehicle details"><strong>VEHICLE DETAILS</strong><span>Vehicle name: {detail.vehicle.displayName}</span><strong>Plate number: {detail.vehicle.plateNumber}</strong><span>Vehicle type: {detail.vehicle.type}</span>{detail.vehicle.conductionSticker&&<span>Conduction sticker: {detail.vehicle.conductionSticker}</span>}<span className="occupancy-status" style={{backgroundColor:occupancyColor(detail.occupancyStatus)}}>{occupancyLabel(detail.occupancyStatus)}</span><span>GPS {detail.location?.freshness??'OFFLINE'} · {detail.location?'Updated '+new Date(detail.location.recordedAt).toLocaleTimeString():'Waiting for GPS'}</span></section>
@@ -95,7 +115,7 @@ function App() {
     <section className="search"><StopPicker label="FROM" stops={stops} selectedId={from} onSelect={setFrom}/><StopPicker label="TO" stops={stops} selectedId={to} onSelect={setTo}/>{from&&from===to&&<p>Choose two different stops.</p>}<button className="primary" disabled={!from||!to||from===to||loading} onClick={search}>{loading?'SEARCHING…':'FIND A RIDE'}</button></section>
     {message&&<p role="status">{message}</p>}{selected&&!detail&&<p role="status">Loading trip details… <button onClick={()=>setSelected(null)}>CANCEL</button></p>}
     {searchContext&&<section className="overview"><h2>Matching active rides</h2><VehicleMap vehicles={results} stops={stops.filter(stop=>[searchContext.fromStopId,searchContext.toStopId].includes(stop.id))} onSelect={id=>{const ride=results.find(ride=>ride.tripId===id);if(ride)track(ride)}}/></section>}
-    <section className="results">{results.map(result=><article key={result.tripId}><div><h3>{result.vehicle.displayName}</h3><p>{result.vehicle.type} · {result.route.name} · {result.route.direction}</p><span className="occupancy-status" style={{backgroundColor:occupancyColor(result.occupancyStatus)}}>{occupancyLabel(result.occupancyStatus)}</span><p>GPS {result.freshness} · {result.lastUpdatedAt?'Updated '+new Date(result.lastUpdatedAt).toLocaleTimeString():'Waiting for GPS'}</p><small>{result.boardingEta.display} to {result.boardingStop.name}</small></div><button onClick={()=>track(result)}>VEHICLE DETAILS</button></article>)}</section>
+    <section className="results">{results.map(result=><article key={result.tripId}><div><h3>{result.vehicle.displayName}</h3><p>{result.vehicle.type} · {routeTitle(result.route)}</p>{routeVia(result.route)&&<p><strong>Via:</strong> {routeVia(result.route)}</p>}<p>{result.route.direction}</p><span className="occupancy-status" style={{backgroundColor:occupancyColor(result.occupancyStatus)}}>{occupancyLabel(result.occupancyStatus)}</span><p>GPS {result.freshness} · {result.lastUpdatedAt?'Updated '+new Date(result.lastUpdatedAt).toLocaleTimeString():'Waiting for GPS'}</p><small>{result.boardingEta.display} to {result.boardingStop.name}</small></div><button onClick={()=>track(result)}>VEHICLE DETAILS</button></article>)}</section>
   </main>;
 }
 createRoot(document.getElementById('root')!).render(<App />);
