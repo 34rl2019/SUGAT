@@ -1,24 +1,23 @@
 # Pilot operations
 
 Admin maintains official ordered routes/stops, registered vehicles and drivers,
-assigns vehicles, and explicitly authorizes driver routes in Driver Management.
-Each route record represents its existing direction. Drivers start actual trips
+and assigns vehicles to drivers. Each route record represents its existing
+direction. Drivers start actual trips
 from those choices, without a schedule or READY trip. Legacy schedules/history
 remain available; schedule creation is unavailable in both the Admin UI and API.
 
 ## API and realtime contracts
 
 - `GET /api/v1/driver/operations`: active trip, assigned active vehicles,
-  authorized active routes, and driver compliance.
+  active operating routes, and driver compliance.
 - `POST /api/v1/driver/trips/start`: `{ routeId, vehicleId, startStopId, destinationStopId }`. Driver Mobile requires all four selections; the API retains single-assigned-vehicle
   resolution for compatible clients omitting vehicleId. Both endpoints are required,
-  active, on the authorized route, in forward order, with boarding/dropoff permission. Creates ACTIVE with
+  active, on the selected active operating route, in forward order, with boarding/dropoff permission. Creates ACTIVE with
   actual `startedAt`, null scheduled departure and VACANT occupancy. The STARTED
   event metadata stores both endpoints; Driver, Admin, Passenger, GPS and stop
   progression use that segment. No new Trip columns are required.
 - `PATCH /api/v1/driver/trips/:id/occupancy`: `{ occupancyStatus: "VACANT" | "FULL" }`.
 - Existing completion and GPS endpoints remain in use.
-- `PATCH /api/v1/admin/drivers/:id/routes`: `{ routeIds: string[] }` replaces grants.
 - `POST /api/v1/admin/drivers/:id/device/reset`: revokes the binding and all driver
   sessions. Active trips remain active so the replacement device can resume them.
 - Public search includes vehicle ID, current location, timestamps, freshness policy,
@@ -57,8 +56,8 @@ Admin can reset it. Device credentials must never be logged or shown to passenge
    trips/schedules and active-trip unique indexes. It does not backfill VACANT or
    infer route authorization from old schedules.
 3. Existing driver sessions are revoked by this migration. Coordinate API and Driver
-   Mobile rollout: drivers must use the updated client and log in again. Admin must
-   review/grant routes before autonomous starts. Existing active trips can resume;
+   Mobile rollout: drivers must use the updated client and log in again. Drivers
+   select from active operating routes when starting trips. Existing active trips can resume;
    their occupancy remains unknown until the driver explicitly updates it.
 4. Regenerate Prisma Client and deploy only affected applications following
    `deploy/DEPLOYMENT.md`. No production migration or deployment is performed by

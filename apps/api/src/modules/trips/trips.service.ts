@@ -781,33 +781,12 @@ export class TripsService {
       });
     }
 
-    if (
-      !(
-        await this.db
-          .driverRouteAuthorization
-          .findUnique({
-            where: {
-              driverId_routeId: {
-                driverId: d.id,
-                routeId:
-                  trip.routeId,
-              },
-            },
-          })
-      )
-    ) {
-      throw new ForbiddenException(
-        'Route is not authorized for this driver.',
-      );
-    }
-
     if (!trip.route.active) {
       throw new ForbiddenException({
         statusCode: 403,
         error: 'Forbidden',
-        code: 'ROUTE_NOT_AUTHORIZED',
-        message:
-          'This route is inactive or no longer authorized for this trip.',
+        code: 'ROUTE_INACTIVE',
+        message: 'This route is inactive.',
       });
     }
 

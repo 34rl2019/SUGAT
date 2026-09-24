@@ -61,7 +61,7 @@ All isolated services were stopped after validation; PostgreSQL fixtures retaine
 
 | Gate | Result | Evidence |
 | --- | --- | --- |
-| Route authorization | PASS | Allowed grant succeeds; unauthorized existing/nonexistent route and unauthorized vehicle rejected server-side. Active route changes rejected. |
+| Operating route and vehicle validation | PASS | Autonomous START uses a registered active route and assigned active vehicle; unknown routes and unauthorized vehicles are rejected server-side. |
 | Autonomous START | PASS | Actual API start with no schedule/READY trip: ACTIVE, actual start time, registered Driver/Vehicle/Route, VACANT. Restart after END succeeded without adding a schedule. |
 | Duplicate prevention | PASS | API conflicts and both independent database uniqueness constraints checked. |
 | FULL/VACANT | PASS | Persistence, event identity, isolation from other trips, visibility and continued GPS checked. |

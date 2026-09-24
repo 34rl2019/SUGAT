@@ -15,19 +15,6 @@ export class AdminService {
   constructor(private db: PrismaService, private compliance: DriverComplianceService, private lifecycle: TripLifecycleService) {}
   private audit(actorId: string, action: string, entityType: string, entityId: string) { return this.db.auditLog.create({ data: { actorId, action, entityType, entityId } }); }
 
-  async authorizeRoutes(actorId: string, driverId: string, routeIds: string[]) {
-    return this.db.$transaction(async tx => {
-      if (!await tx.driver.findUnique({ where: { id: driverId } })) throw new NotFoundException('Driver not found');
-      if (await tx.route.count({ where: { id: { in: routeIds }, active: true } }) !== routeIds.length) throw new BadRequestException('Choose valid active routes.');
-      const active = await tx.trip.findFirst({ where: { driverId, status: 'ACTIVE' } });
-      if (active && !routeIds.includes(active.routeId)) throw new ConflictException('End the active trip before removing its route authorization.');
-      await tx.driverRouteAuthorization.deleteMany({ where: { driverId } });
-      if (routeIds.length) await tx.driverRouteAuthorization.createMany({ data: routeIds.map(routeId => ({ driverId, routeId })) });
-      await tx.auditLog.create({ data: { actorId, action: 'driver.routes.authorized', entityType: 'Driver', entityId: driverId, metadata: { routeIds } } });
-      return { routeIds };
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
-  }
-
   async resetDevice(actorId: string, driverId: string) {
     return this.db.$transaction(async tx => {
       const driver = await tx.driver.findUnique({ where: { id: driverId } });
@@ -57,7 +44,7 @@ export class AdminService {
     return { activeTrips, activeBuses, activeVans, driversOnActiveTrips: activeTrips, gpsStale, completedToday, licensesExpiringWithin30Days, licensesExpiringWithin7Days, expiredLicenses, driversPendingVerification };
   }
 
-  async drivers() { const drivers = await this.db.driver.findMany({ include: { user: { select: { email: true, phone: true, accountStatus: true } }, vehicles: true, authorizedRoutes: { select: { route: { select: { id: true, name: true, direction: true, active: true } } } }, authorizedDevice: { select: { authorizedAt: true } } }, orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }] }); return drivers.map(driver => ({ ...driver, compliance: this.compliance.evaluate(driver) })); }
+  async drivers() { const drivers = await this.db.driver.findMany({ include: { user: { select: { email: true, phone: true, accountStatus: true } }, vehicles: true, authorizedDevice: { select: { authorizedAt: true } } }, orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }] }); return drivers.map(driver => ({ ...driver, compliance: this.compliance.evaluate(driver) })); }
   async createDriver(actorId: string, dto: any) {
     const { email, password, phone, licenseExpiresAt, ...driver } = dto;
     const normalizedEmail = normalizeEmail(email);

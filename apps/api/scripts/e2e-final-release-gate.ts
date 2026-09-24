@@ -184,7 +184,6 @@ async function main() {
   }
   const routeMinutes = [null, 10, 20, 15];
   const route = await db.route.create({ data: { name: tag, direction: 'E2E ORDER', stops: { create: ids.stops.map((stopId, index) => ({ stopId, sequence: index + 1, minutesFromPrevious: routeMinutes[index] })) } } }); ids.route = route.id;
-  await db.driverRouteAuthorization.create({data:{driverId:ids.driver!,routeId:route.id}});
   const driverToken = await login(email, password, '198.51.100.1');
   const adminToken = await login('admin@example.test', 'DevelopmentOnly123!', '198.51.100.2');
   await securityChecks(adminToken);
@@ -229,7 +228,6 @@ async function main() {
   const isolationEmail = `${tag}-isolation@example.test`, isolationPassword = `Isolation-${randomUUID()}!`;
   const isolationUser = await db.user.create({ data: { email: isolationEmail, passwordHash: await argon2.hash(isolationPassword), role: 'DRIVER', driver: { create: { firstName: 'Room', lastName: 'Isolation', active: true, licenseNumber: `${tag}-isolation-license`, licenseExpiresAt: new Date(Date.now() + 365 * 86400000), identityVerificationStatus: 'APPROVED', licenseVerificationStatus: 'APPROVED' } } }, include: { driver: true } }); securityUsers.push(isolationUser.id);
   const isolationVehicle = await db.vehicle.create({ data: { type: 'VAN', plateNumber: `${tag}-iso`, displayName: `E2E isolation ${tag}`, active: true, assignedDriverId: isolationUser.driver!.id } }); securityVehicles.push(isolationVehicle.id);
-  await db.driverRouteAuthorization.create({data:{driverId:isolationUser.driver!.id,routeId:ids.route!}});
   const isolationToken = await login(isolationEmail, isolationPassword, '198.51.100.32');
   const missedSchedule = await db.schedule.create({ data: { routeId: ids.route!, driverId: isolationUser.driver!.id, vehicleId: isolationVehicle.id, departureAt: new Date(Date.now() - 31 * 60_000), trip: { create: { routeId: ids.route!, driverId: isolationUser.driver!.id, vehicleId: isolationVehicle.id, scheduledDepartureAt: new Date(Date.now() - 31 * 60_000), status: 'READY' } } }, include: { trip: true } });
   ids.schedules.push(missedSchedule.id); ids.trips.push(missedSchedule.trip!.id);
@@ -413,7 +411,6 @@ async function pilotChecks(adminToken:string){
     const email=`${tag}-pilot-${index}@example.test`;
     const user=await db.user.create({data:{email,passwordHash:await argon2.hash(password),role:'DRIVER',driver:{create:{firstName:'Pilot',lastName:`Fixture ${index}`,active:true,licenseNumber:`${tag}-${index}`,licenseExpiresAt:new Date(Date.now()+86400000),identityVerificationStatus:'APPROVED',licenseVerificationStatus:'APPROVED'}}},include:{driver:true}});securityUsers.push(user.id);
     const vehicle=await db.vehicle.create({data:{type:index===2?'BUS':'VAN',displayName:`Pilot fixture ${index}`,plateNumber:`${tag}-pilot-${index}`,conductionSticker:index===0?'TEST-OPTIONAL':null,capacity:15,assignedDriverId:user.driver!.id}});securityVehicles.push(vehicle.id);
-    assert((await request(`/admin/drivers/${user.driver!.id}/routes`,{method:'PATCH',body:JSON.stringify({routeIds:[ids.route]})},adminToken)).status===200,'Admin route authorization failed');
     const token=await login(email,password,`198.51.100.${60+index}`);
     assert((await request('/driver/trips/start',{method:'POST',body:JSON.stringify({routeId:randomUUID(),vehicleId:vehicle.id,startStopId:ids.stops[0],destinationStopId:ids.stops[ids.stops.length-1]})},token)).status===404,'Unknown autonomous route was not rejected');
     const started=await request('/driver/trips/start',{method:'POST',body:JSON.stringify({routeId:ids.route,vehicleId:vehicle.id,startStopId:ids.stops[0],destinationStopId:ids.stops[ids.stops.length-1]})},token);

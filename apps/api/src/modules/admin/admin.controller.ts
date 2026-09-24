@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { AccountStatus, Role, VehicleType } from '@prisma/client';
-import { ArrayMaxSize, ArrayUnique, IsArray, IsBoolean, IsDateString, IsEmail, IsEnum, IsInt, IsNumber, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength, ValidateIf, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsDateString, IsEmail, IsEnum, IsInt, IsNumber, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength, ValidateIf, ValidateNested } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { AuthUser, CurrentUser, JwtGuard, Roles } from '../../common/auth';
 import { AdminService } from './admin.service';
@@ -36,14 +36,12 @@ class RouteStopDto {
 }
 class RouteDto { @IsString() name!: string; @IsString() direction!: string; @IsArray() @ValidateNested({ each: true }) @Type(() => RouteStopDto) stops!: RouteStopDto[]; }
 class ActiveDto { @IsBoolean() active!: boolean; }
-class DriverRoutesDto { @IsArray() @ArrayMaxSize(100) @ArrayUnique() @IsUUID('all', { each: true }) routeIds!: string[]; }
 
 @UseGuards(JwtGuard) @Roles(Role.ADMIN) @Controller('admin')
 export class AdminController {
   constructor(private admin: AdminService) {}
   @Get('dashboard') dashboard() { return this.admin.dashboard(); }
   @Get('drivers') drivers() { return this.admin.drivers(); }
-  @Patch('drivers/:id/routes') driverRoutes(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() d: DriverRoutesDto) { return this.admin.authorizeRoutes(u.sub, id, d.routeIds); }
   @Post('drivers/:id/device/reset') resetDevice(@CurrentUser() u: AuthUser, @Param('id') id: string) { return this.admin.resetDevice(u.sub, id); }
   @Post('drivers') createDriver(@CurrentUser() u: AuthUser, @Body() d: DriverDto) { return this.admin.createDriver(u.sub, d); }
   @Patch('drivers/:id') updateDriver(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() d: UpdateDriverDto) { return this.admin.updateDriver(u.sub, id, d); }
