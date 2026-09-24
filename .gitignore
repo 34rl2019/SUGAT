@@ -30,6 +30,3 @@ build/
 *.bak
 
 # Accidental shell/output files
-ername,
-ql "$DATABASE_URL" -c '
-tsc
