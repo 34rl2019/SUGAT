@@ -415,7 +415,7 @@ async function pilotChecks(adminToken:string){
     const vehicle=await db.vehicle.create({data:{type:index===2?'BUS':'VAN',displayName:`Pilot fixture ${index}`,plateNumber:`${tag}-pilot-${index}`,conductionSticker:index===0?'TEST-OPTIONAL':null,capacity:15,assignedDriverId:user.driver!.id}});securityVehicles.push(vehicle.id);
     assert((await request(`/admin/drivers/${user.driver!.id}/routes`,{method:'PATCH',body:JSON.stringify({routeIds:[ids.route]})},adminToken)).status===200,'Admin route authorization failed');
     const token=await login(email,password,`198.51.100.${60+index}`);
-    assert((await request('/driver/trips/start',{method:'POST',body:JSON.stringify({routeId:randomUUID(),vehicleId:vehicle.id,startStopId:ids.stops[0],destinationStopId:ids.stops[ids.stops.length-1]})},token)).status===403,'Unauthorized autonomous route accepted');
+    assert((await request('/driver/trips/start',{method:'POST',body:JSON.stringify({routeId:randomUUID(),vehicleId:vehicle.id,startStopId:ids.stops[0],destinationStopId:ids.stops[ids.stops.length-1]})},token)).status===404,'Unknown autonomous route was not rejected');
     const started=await request('/driver/trips/start',{method:'POST',body:JSON.stringify({routeId:ids.route,vehicleId:vehicle.id,startStopId:ids.stops[0],destinationStopId:ids.stops[ids.stops.length-1]})},token);
     assert(started.status===201&&started.body.status==='ACTIVE'&&started.body.occupancyStatus==='VACANT'&&started.body.startedAt&&!started.body.scheduleId&&!started.body.scheduledDepartureAt,'Autonomous start contract failed');
     ids.trips.push(started.body.id);fixtures.push({userId:user.id,driverId:user.driver!.id,vehicleId:vehicle.id,email,token,tripId:started.body.id});
