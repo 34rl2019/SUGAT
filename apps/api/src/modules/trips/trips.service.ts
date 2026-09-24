@@ -194,8 +194,8 @@ export class TripsService {
   }
 
   /**
-   * Starts a new autonomous trip directly from the
-   * driver's authorized route and registered vehicle.
+   * Starts a new autonomous trip using an active trip path
+   * and the registered vehicle assigned to this driver.
    *
    * Start and destination stop IDs are stored in the
    * STARTED TripEvent metadata because the Trip model
